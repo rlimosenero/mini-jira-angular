@@ -91,6 +91,31 @@ import { IconComponent } from './icon.component';
         }
       </div>
 
+      <div class="px-4 sm:px-6 pt-3 flex items-center gap-2 flex-wrap">
+        <app-icon name="users" [size]="15" style="color: var(--mj-ink-soft)" />
+        <button
+          (click)="activeResourceId.set(null)"
+          class="mj-mono mj-chip text-xs font-semibold px-3 py-1.5 rounded-full border"
+          [style.background]="activeResourceId() === null ? 'var(--mj-ink)' : 'var(--mj-card)'"
+          [style.color]="activeResourceId() === null ? '#fff' : 'var(--mj-ink-soft)'"
+          style="border-color: var(--mj-line)"
+        >
+          ALL TEAM
+        </button>
+        @for (r of store.resources(); track r.id) {
+          <button
+            (click)="activeResourceId.set(r.id)"
+            class="mj-mono mj-chip text-xs font-semibold px-3 py-1.5 rounded-full border"
+            [style.background]="activeResourceId() === r.id ? 'var(--mj-ink)' : 'var(--mj-card)'"
+            [style.color]="activeResourceId() === r.id ? '#fff' : 'var(--mj-ink-soft)'"
+            style="border-color: var(--mj-line)"
+          >
+            {{ r.name }}
+          </button>
+        }
+      </div>
+      <!-- End All Projects -->
+
       <app-board
         [tickets]="filteredTickets()"
         [showProjectLabel]="activeProjectId() === 'all'"
@@ -117,6 +142,7 @@ export class AppComponent {
   store = inject(TicketStoreService);
 
   activeProjectId = signal<string>('all');
+  activeResourceId = signal<string | null>(null);
   query = signal('');
   activeTicketId = signal<string | null>(null);
   showTeamPanel = signal(false);
@@ -125,9 +151,11 @@ export class AppComponent {
 
   filteredTickets = computed(() => {
     const projectId = this.activeProjectId();
+    const resourceId = this.activeResourceId();
     const q = this.query().trim().toLowerCase();
     return this.store.tickets().filter((t) => {
       if (projectId !== 'all' && t.projectId !== projectId) return false;
+      if (resourceId && t.resourceId !== resourceId) return false;
       if (!q) return true;
       const res = this.store.resourceById(t.resourceId);
       return (

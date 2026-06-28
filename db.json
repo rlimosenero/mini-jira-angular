@@ -38,6 +38,11 @@
       "id": "1",
       "username": "admin",
       "password": "admin"
+    },
+    {
+      "id": "2",
+      "username": "dev",
+      "password": "dev"
     }
   ],
   "tickets": [
@@ -87,7 +92,7 @@
       "num": 1,
       "title": "Define auth endpoints",
       "description": "Spec login, refresh, logout.",
-      "status": "progress",
+      "status": "backlog",
       "priority": "high",
       "resourceId": "r1782653617709"
     },

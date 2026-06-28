@@ -1,7 +1,7 @@
 import { Component, input, output } from '@angular/core';
-import { Ticket, Resource, PRIORITY_META } from './models';
-import { colorFor, initials } from './utils';
-import { IconComponent } from './icon.component';
+import { Ticket, Resource, PRIORITY_META } from '../shared/models';
+import { colorFor, initials } from '../shared/utils';
+import { IconComponent } from '../shared/icon.component';
 
 @Component({
   selector: 'app-ticket-card',

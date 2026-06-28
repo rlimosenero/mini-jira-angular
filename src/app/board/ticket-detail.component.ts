@@ -1,8 +1,8 @@
 import { Component, computed, inject, input, output } from '@angular/core';
 import { FormsModule } from '@angular/forms';
-import { COLUMNS, PRIORITY_META } from './models';
+import { COLUMNS, PRIORITY_META } from '../shared/models';
 import { TicketStoreService } from './ticket-store.service';
-import { IconComponent } from './icon.component';
+import { IconComponent } from '../shared/icon.component';
 
 @Component({
   selector: 'app-ticket-detail',

@@ -1,7 +1,7 @@
 import { Injectable } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
 import { Observable } from 'rxjs';
-import { Project, Resource, Ticket, User } from './models';
+import { Project, Resource, Ticket, User } from '../shared/models';
 
 const API = 'http://localhost:3000';
 

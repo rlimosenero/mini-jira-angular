@@ -1,8 +1,8 @@
 import { Injectable, signal, effect, inject } from '@angular/core';
-import { Project, Resource, Ticket, Status } from './models';
+import { Project, Resource, Ticket, Status } from '../shared/models';
 import { SEED_PROJECTS, SEED_RESOURCES, SEED_TICKETS } from './seed';
-import { keyFromName } from './utils';
-import { TicketApiService } from './ticket-api.service';
+import { keyFromName } from '../shared/utils';
+import { TicketApiService } from '../core/ticket-api.service';
 
 const LS_KEYS = {
   projects: 'mini-jira-projects',

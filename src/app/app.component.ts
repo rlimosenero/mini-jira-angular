@@ -1,12 +1,12 @@
 import { Component, computed, inject, signal } from '@angular/core';
 import { FormsModule } from '@angular/forms';
-import { TicketStoreService } from './ticket-store.service';
-import { AuthService } from './auth.service';
-import { BoardComponent } from './board.component';
-import { TicketDetailComponent } from './ticket-detail.component';
-import { TeamPanelComponent } from './team-panel.component';
-import { LoginComponent } from './login.component';
-import { IconComponent } from './icon.component';
+import { TicketStoreService } from './board/ticket-store.service';
+import { AuthService } from './core/auth.service';
+import { BoardComponent } from './board/board.component';
+import { TicketDetailComponent } from './board/ticket-detail.component';
+import { TeamPanelComponent } from './team/team-panel.component';
+import { LoginComponent } from './login/login.component';
+import { IconComponent } from './shared/icon.component';
 
 @Component({
   selector: 'app-root',

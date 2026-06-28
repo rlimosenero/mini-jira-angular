@@ -1,10 +1,10 @@
 import { Component, inject, input, output, signal } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { CdkDragDrop, DragDropModule } from '@angular/cdk/drag-drop';
-import { COLUMNS, Status, Ticket } from './models';
+import { COLUMNS, Status, Ticket } from '../shared/models';
 import { TicketStoreService } from './ticket-store.service';
 import { TicketCardComponent } from './ticket-card.component';
-import { IconComponent } from './icon.component';
+import { IconComponent } from '../shared/icon.component';
 
 @Component({
   selector: 'app-board',

@@ -1,4 +1,4 @@
-import { Project, Resource, Ticket } from './models';
+import { Project, Resource, Ticket } from '../shared/models';
 
 export const SEED_PROJECTS: Project[] = [
   { id: 'p1', key: 'MJ', name: 'Mini Jira' },

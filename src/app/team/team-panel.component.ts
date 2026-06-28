@@ -1,8 +1,8 @@
 import { Component, inject, output, signal } from '@angular/core';
 import { FormsModule } from '@angular/forms';
-import { TicketStoreService } from './ticket-store.service';
-import { IconComponent } from './icon.component';
-import { colorFor, initials } from './utils';
+import { TicketStoreService } from '../board/ticket-store.service';
+import { IconComponent } from '../shared/icon.component';
+import { colorFor, initials } from '../shared/utils';
 
 @Component({
   selector: 'app-team-panel',

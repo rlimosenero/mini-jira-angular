@@ -1,17 +1,22 @@
 import { Component, computed, inject, signal } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { TicketStoreService } from './ticket-store.service';
+import { AuthService } from './auth.service';
 import { BoardComponent } from './board.component';
 import { TicketDetailComponent } from './ticket-detail.component';
 import { TeamPanelComponent } from './team-panel.component';
+import { LoginComponent } from './login.component';
 import { IconComponent } from './icon.component';
 
 @Component({
   selector: 'app-root',
   standalone: true,
-  imports: [FormsModule, BoardComponent, TicketDetailComponent, TeamPanelComponent, IconComponent],
+  imports: [FormsModule, BoardComponent, TicketDetailComponent, TeamPanelComponent, LoginComponent, IconComponent],
   template: `
-    <div class="min-h-screen mj-sans" style="background: var(--mj-bg); color: var(--mj-ink)">
+    @if (!auth.currentUser()) {
+      <app-login (login)="handleLogin($event)" [serverError]="loginError()" [loading]="loginLoading()" />
+    } @else {
+      <div class="min-h-screen mj-sans" style="background: var(--mj-bg); color: var(--mj-ink)">
       <!-- Header -->
       <header class="border-b px-4 sm:px-6 py-4 flex flex-col sm:flex-row sm:items-center gap-3 sm:gap-4" style="border-color: var(--mj-line)">
         <div class="flex items-center gap-2">
@@ -37,7 +42,21 @@ import { IconComponent } from './icon.component';
           <app-icon name="users" [size]="15" />
           Team
         </button>
+        <button
+          (click)="auth.logout()"
+          class="mj-sans text-sm px-3 py-2 rounded-md border"
+          style="background: var(--mj-card); border-color: var(--mj-line); color: var(--mj-ink-soft)"
+        >
+          Sign out ({{ auth.currentUser() }})
+        </button>
       </header>
+
+      @if (store.apiError()) {
+        <div class="px-4 sm:px-6 py-2 mj-sans text-xs flex items-center justify-between" style="background: #FCE9E7; color: var(--mj-red)">
+          <span>{{ store.apiError() }}</span>
+          <button (click)="store.refreshFromApi()" class="mj-mono font-semibold underline">Retry</button>
+        </div>
+      }
 
       <!-- Project tabs -->
       <div class="px-4 sm:px-6 pt-3 flex items-center gap-2 flex-wrap">
@@ -129,6 +148,7 @@ import { IconComponent } from './icon.component';
         <app-team-panel (close)="showTeamPanel.set(false)" />
       }
     </div>
+    }
   `,
   styles: [
     `
@@ -140,9 +160,12 @@ import { IconComponent } from './icon.component';
 })
 export class AppComponent {
   store = inject(TicketStoreService);
+  auth = inject(AuthService);
 
   activeProjectId = signal<string>('all');
   activeResourceId = signal<string | null>(null);
+  loginError = signal<string | null>(null);
+  loginLoading = signal(false);
   query = signal('');
   activeTicketId = signal<string | null>(null);
   showTeamPanel = signal(false);
@@ -173,5 +196,14 @@ export class AppComponent {
       this.newProjectName = '';
       this.showProjectForm.set(false);
     }
+  }
+
+  handleLogin(payload: { username: string; password: string }): void {
+    this.loginLoading.set(true);
+    this.loginError.set(null);
+    this.auth.login(payload.username, payload.password).subscribe((success) => {
+      this.loginLoading.set(false);
+      if (!success) this.loginError.set('Invalid username or password.');
+    });
   }
 }

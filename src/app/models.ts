@@ -13,6 +13,12 @@ export interface Resource {
   role: string;
 }
 
+export interface User {
+  id: string;
+  username: string;
+  password: string;
+}
+
 export interface Ticket {
   id: string;
   projectId: string;

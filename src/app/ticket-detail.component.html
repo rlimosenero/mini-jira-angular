@@ -1,0 +1,97 @@
+@if (ticket()) {
+  <div class="fixed inset-0 z-20 flex justify-end" (click)="close.emit()">
+    <div class="flex-1" style="background: rgba(28,35,51,0.25)"></div>
+    <div class="w-full sm:w-96 h-full overflow-y-auto p-5 bg-white border-l" style="border-color: var(--mj-line)" (click)="$event.stopPropagation()">
+      <div class="flex items-center justify-between mb-4">
+        <span class="mj-mono text-xs font-semibold" style="color: var(--mj-ink-soft)">{{ store.ticketKey(ticket()!) }}</span>
+        <button (click)="close.emit()" aria-label="Close">
+          <app-icon name="x" [size]="18" style="color: var(--mj-ink-soft)" />
+        </button>
+      </div>
+
+      <input
+        [ngModel]="ticket()!.title"
+        (ngModelChange)="store.updateTicket(ticket()!.id, { title: $event })"
+        class="mj-sans w-full text-base font-semibold mb-4 outline-none"
+      />
+
+      <label class="mj-mono text-[11px] font-semibold tracking-wide" style="color: var(--mj-ink-soft)">DESCRIPTION</label>
+      <textarea
+        [ngModel]="ticket()!.description"
+        (ngModelChange)="store.updateTicket(ticket()!.id, { description: $event })"
+        placeholder="Add a description…"
+        rows="4"
+        class="mj-sans w-full text-sm mt-1 mb-4 p-2 rounded-md outline-none resize-none border"
+        style="background: var(--mj-bg); border-color: var(--mj-line)"
+      ></textarea>
+
+      <div class="grid grid-cols-2 gap-3 mb-4">
+        <div>
+          <label class="mj-mono text-[11px] font-semibold tracking-wide" style="color: var(--mj-ink-soft)">STATUS</label>
+          <select
+            [ngModel]="ticket()!.status"
+            (ngModelChange)="store.updateTicket(ticket()!.id, { status: $event })"
+            class="mj-sans w-full text-sm mt-1 p-2 rounded-md outline-none border"
+            style="background: var(--mj-bg); border-color: var(--mj-line)"
+          >
+            @for (c of columns; track c.id) {
+              <option [value]="c.id">{{ c.label }}</option>
+            }
+          </select>
+        </div>
+        <div>
+          <label class="mj-mono text-[11px] font-semibold tracking-wide" style="color: var(--mj-ink-soft)">PRIORITY</label>
+          <select
+            [ngModel]="ticket()!.priority"
+            (ngModelChange)="store.updateTicket(ticket()!.id, { priority: $event })"
+            class="mj-sans w-full text-sm mt-1 p-2 rounded-md outline-none border"
+            style="background: var(--mj-bg); border-color: var(--mj-line)"
+          >
+            @for (p of priorityKeys; track p) {
+              <option [value]="p">{{ priorityMeta[p].label }}</option>
+            }
+          </select>
+        </div>
+      </div>
+
+      <div class="grid grid-cols-2 gap-3 mb-6">
+        <div>
+          <label class="mj-mono text-[11px] font-semibold tracking-wide" style="color: var(--mj-ink-soft)">PROJECT</label>
+          <select
+            [ngModel]="ticket()!.projectId"
+            (ngModelChange)="store.reassignProject(ticket()!.id, $event)"
+            class="mj-sans w-full text-sm mt-1 p-2 rounded-md outline-none border"
+            style="background: var(--mj-bg); border-color: var(--mj-line)"
+          >
+            @for (p of store.projects(); track p.id) {
+              <option [value]="p.id">{{ p.key }} · {{ p.name }}</option>
+            }
+          </select>
+        </div>
+        <div>
+          <label class="mj-mono text-[11px] font-semibold tracking-wide" style="color: var(--mj-ink-soft)">ASSIGNEE</label>
+          <select
+            [ngModel]="ticket()!.resourceId ?? ''"
+            (ngModelChange)="store.updateTicket(ticket()!.id, { resourceId: $event || null })"
+            class="mj-sans w-full text-sm mt-1 p-2 rounded-md outline-none border"
+            style="background: var(--mj-bg); border-color: var(--mj-line)"
+          >
+            <option value="">Unassigned</option>
+            @for (r of store.resources(); track r.id) {
+              <option [value]="r.id">{{ r.name }}</option>
+            }
+          </select>
+        </div>
+      </div>
+
+      <button
+        (click)="deleteAndClose()"
+        class="mj-sans flex items-center gap-2 text-sm px-3 py-2 rounded-md border"
+        style="color: var(--mj-red); border-color: var(--mj-red)"
+      >
+        <app-icon name="trash" [size]="14" />
+        Delete ticket
+      </button>
+    </div>
+  </div>
+}

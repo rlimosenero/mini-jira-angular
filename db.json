@@ -13,19 +13,24 @@
   ],
   "resources": [
     {
-      "id": "r1",
-      "name": "Sam Rivera",
-      "role": "Engineer"
+      "id": "e1n7DJ8ThpI",
+      "name": "RBL",
+      "role": "Team member"
     },
     {
-      "id": "r2",
-      "name": "Priya Nair",
-      "role": "Designer"
+      "id": "LcyJqvGn-1g",
+      "name": "ENZO",
+      "role": "Team member"
     },
     {
-      "id": "r3",
-      "name": "Jo Tanaka",
-      "role": "PM"
+      "id": "hCLaVXGjyEk",
+      "name": "ED",
+      "role": "Team member"
+    },
+    {
+      "id": "cuDXGsCdXmk",
+      "name": "JES",
+      "role": "Team member"
     }
   ],
   "users": [
@@ -44,7 +49,7 @@
       "description": "Bootstrap repo, linting, CI.",
       "status": "done",
       "priority": "medium",
-      "resourceId": "r1"
+      "resourceId": "r1782653437166"
     },
     {
       "id": "t2",
@@ -52,9 +57,9 @@
       "num": 2,
       "title": "Design ticket board layout",
       "description": "Kanban columns with stub-style cards.",
-      "status": "review",
+      "status": "done",
       "priority": "high",
-      "resourceId": "r2"
+      "resourceId": "r1782653437166"
     },
     {
       "id": "t3",
@@ -62,9 +67,9 @@
       "num": 3,
       "title": "Wire up drag and drop",
       "description": "Move tickets between columns.",
-      "status": "review",
+      "status": "done",
       "priority": "urgent",
-      "resourceId": "r1"
+      "resourceId": "r1782653437166"
     },
     {
       "id": "t4",
@@ -72,9 +77,9 @@
       "num": 4,
       "title": "Add search and filtering",
       "description": "Filter board by title or assignee.",
-      "status": "backlog",
-      "priority": "low",
-      "resourceId": null
+      "status": "done",
+      "priority": "medium",
+      "resourceId": "r1782653437166"
     },
     {
       "id": "t5",
@@ -82,9 +87,9 @@
       "num": 1,
       "title": "Define auth endpoints",
       "description": "Spec login, refresh, logout.",
-      "status": "backlog",
+      "status": "progress",
       "priority": "high",
-      "resourceId": "r3"
+      "resourceId": "r1782653617709"
     },
     {
       "id": "t6",
@@ -92,9 +97,9 @@
       "num": 2,
       "title": "Rate limiting middleware",
       "description": "Per-key throttling.",
-      "status": "done",
+      "status": "backlog",
       "priority": "medium",
-      "resourceId": "r1"
+      "resourceId": "r1782653622637"
     }
   ],
   "$schema": "./node_modules/json-server/schema.json"

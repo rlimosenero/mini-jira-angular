@@ -1,0 +1,103 @@
+@import url('https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@500;600&family=Inter:wght@400;500;600;700&display=swap');
+
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+
+:root {
+  --mj-bg: #edf0f4;
+  --mj-ink: #1c2333;
+  --mj-ink-soft: #5b6478;
+  --mj-card: #ffffff;
+  --mj-line: #c7cfda;
+  --mj-amber: #d98e2b;
+  --mj-red: #c1473d;
+  --mj-green: #3e8067;
+  --mj-blue: #3b6fa0;
+  --mj-slate: #7c8696;
+}
+
+body {
+  margin: 0;
+}
+
+.mj-mono {
+  font-family: 'IBM Plex Mono', monospace;
+}
+.mj-sans {
+  font-family: 'Inter', sans-serif;
+}
+
+.mj-stub {
+  position: relative;
+}
+
+.mj-perf {
+  position: relative;
+  height: 0;
+  border-top: 2px dashed var(--mj-line);
+  margin: 10px 0;
+}
+.mj-perf::before,
+.mj-perf::after {
+  content: '';
+  position: absolute;
+  top: -7px;
+  width: 14px;
+  height: 14px;
+  border-radius: 50%;
+  background: var(--mj-bg);
+}
+.mj-perf::before {
+  left: -22px;
+}
+.mj-perf::after {
+  right: -22px;
+}
+
+.mj-stamp {
+  display: inline-block;
+  border: 2px solid currentColor;
+  border-radius: 4px;
+  padding: 1px 6px;
+  transform: rotate(-4deg);
+  letter-spacing: 0.06em;
+  font-size: 10px;
+  font-weight: 600;
+}
+
+.mj-card {
+  transition: box-shadow 0.15s ease, transform 0.15s ease;
+}
+.mj-card:hover {
+  box-shadow: 0 4px 14px rgba(28, 35, 51, 0.12);
+  transform: translateY(-1px);
+}
+
+.mj-chip {
+  transition: background 0.15s ease, color 0.15s ease;
+}
+
+/* CDK drag-and-drop visuals */
+.cdk-drag-preview {
+  box-shadow: 0 8px 20px rgba(28, 35, 51, 0.2);
+  border-radius: 0.5rem;
+}
+.cdk-drag-placeholder {
+  opacity: 0.3;
+}
+.cdk-drag-animating {
+  transition: transform 200ms cubic-bezier(0, 0, 0.2, 1);
+}
+.cdk-drop-list-dragging .cdk-drag {
+  transition: transform 200ms cubic-bezier(0, 0, 0.2, 1);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .mj-card,
+  .cdk-drag-animating,
+  .cdk-drop-list-dragging .cdk-drag {
+    transition: none;
+  }
+}

@@ -9,6 +9,16 @@
       "id": "p2",
       "key": "API",
       "name": "API Platform"
+    },
+    {
+      "id": "ceJaoUAjk1I",
+      "key": "LAN",
+      "name": "LANTERN"
+    },
+    {
+      "id": "Ce-WiHiwT1Y",
+      "key": "GEN",
+      "name": "GENOFC"
     }
   ],
   "resources": [
@@ -105,6 +115,16 @@
       "status": "backlog",
       "priority": "medium",
       "resourceId": "r1782653622637"
+    },
+    {
+      "id": "qGj5eSBRKl0",
+      "projectId": "ceJaoUAjk1I",
+      "num": 1,
+      "title": "Deployment Plan (spike)",
+      "description": "Create a deployment plan in VM",
+      "status": "backlog",
+      "priority": "medium",
+      "resourceId": "hCLaVXGjyEk"
     }
   ],
   "$schema": "./node_modules/json-server/schema.json"

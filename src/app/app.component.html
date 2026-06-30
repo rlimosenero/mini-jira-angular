@@ -20,6 +20,14 @@
         />
       </div>
       <button
+        (click)="showVelocityPanel.set(true)"
+        class="mj-sans text-sm flex items-center gap-1.5 px-3 py-2 rounded-md border"
+        style="background: var(--mj-card); border-color: var(--mj-line)"
+      >
+        <app-icon name="trending-up" [size]="15" />
+        Velocity
+      </button>
+      <button
         (click)="showTeamPanel.set(true)"
         class="mj-sans text-sm flex items-center gap-1.5 px-3 py-2 rounded-md border"
         style="background: var(--mj-card); border-color: var(--mj-line)"
@@ -47,7 +55,7 @@
     <div class="px-4 sm:px-6 pt-3 flex items-center gap-2 flex-wrap">
       <app-icon name="folder" [size]="15" style="color: var(--mj-ink-soft)" />
       <button
-        (click)="activeProjectId.set('all')"
+        (click)="selectProject('all')"
         class="mj-mono mj-chip text-xs font-semibold px-3 py-1.5 rounded-full border"
         [style.background]="activeProjectId() === 'all' ? 'var(--mj-ink)' : 'var(--mj-card)'"
         [style.color]="activeProjectId() === 'all' ? '#fff' : 'var(--mj-ink-soft)'"
@@ -57,7 +65,7 @@
       </button>
       @for (p of store.projects(); track p.id) {
         <button
-          (click)="activeProjectId.set(p.id)"
+          (click)="selectProject(p.id)"
           class="mj-mono mj-chip text-xs font-semibold px-3 py-1.5 rounded-full border"
           [style.background]="activeProjectId() === p.id ? 'var(--mj-ink)' : 'var(--mj-card)'"
           [style.color]="activeProjectId() === p.id ? '#fff' : 'var(--mj-ink-soft)'"
@@ -95,6 +103,51 @@
       }
     </div>
 
+    <!-- Sprint tabs -->
+    <div class="px-4 sm:px-6 pt-2 flex items-center gap-2 flex-wrap">
+      <span class="mj-mono text-[10px] font-semibold tracking-wider" style="color: var(--mj-ink-soft)">SPRINT</span>
+      <button
+        (click)="activeSprintId.set('all')"
+        class="mj-mono mj-chip text-xs px-2.5 py-1 rounded-full border"
+        [style.background]="activeSprintId() === 'all' ? 'var(--mj-blue)' : 'var(--mj-card)'"
+        [style.color]="activeSprintId() === 'all' ? '#fff' : 'var(--mj-ink-soft)'"
+        style="border-color: var(--mj-line)"
+      >
+        ALL
+      </button>
+      <button
+        (click)="activeSprintId.set('none')"
+        class="mj-mono mj-chip text-xs px-2.5 py-1 rounded-full border"
+        [style.background]="activeSprintId() === 'none' ? 'var(--mj-blue)' : 'var(--mj-card)'"
+        [style.color]="activeSprintId() === 'none' ? '#fff' : 'var(--mj-ink-soft)'"
+        style="border-color: var(--mj-line)"
+      >
+        NO SPRINT
+      </button>
+      @for (s of projectSprints(); track s.id) {
+        <button
+          (click)="activeSprintId.set(s.id)"
+          class="mj-mono mj-chip text-xs px-2.5 py-1 rounded-full border"
+          [style.background]="activeSprintId() === s.id ? 'var(--mj-blue)' : 'var(--mj-card)'"
+          [style.color]="activeSprintId() === s.id ? '#fff' : 'var(--mj-ink-soft)'"
+          style="border-color: var(--mj-line)"
+          [title]="s.startDate + ' – ' + s.endDate"
+        >
+          {{ s.name }}
+        </button>
+      }
+      @if (activeProjectId() !== 'all') {
+        <button
+          (click)="store.addSprint(activeProjectId())"
+          class="mj-mono text-xs flex items-center gap-1 px-2.5 py-1 rounded-full"
+          style="color: var(--mj-ink-soft); border: 1px dashed var(--mj-line)"
+        >
+          <app-icon name="plus" [size]="11" />
+          SPRINT
+        </button>
+      }
+    </div>
+
     <div class="px-4 sm:px-6 pt-3 flex items-center gap-2 flex-wrap">
       <app-icon name="users" [size]="15" style="color: var(--mj-ink-soft)" />
       <button
@@ -124,6 +177,7 @@
       [tickets]="filteredTickets()"
       [showProjectLabel]="activeProjectId() === 'all'"
       [activeProjectId]="activeProjectId()"
+      [activeSprintId]="activeSprintId()"
       (openTicket)="activeTicketId.set($event)"
     />
 
@@ -131,6 +185,10 @@
 
     @if (showTeamPanel()) {
       <app-team-panel (close)="showTeamPanel.set(false)" />
+    }
+
+    @if (showVelocityPanel()) {
+      <app-velocity-panel [activeProjectId]="activeProjectId()" (close)="showVelocityPanel.set(false)" />
     }
   </div>
 }

@@ -8,7 +8,8 @@ export type IconName =
   | 'grip'
   | 'ticket'
   | 'users'
-  | 'folder';
+  | 'folder'
+  | 'trending-up';
 
 @Component({
   selector: 'app-icon',

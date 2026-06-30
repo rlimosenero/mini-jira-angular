@@ -22,6 +22,7 @@
               [ticket]="t"
               [ticketKey]="store.ticketKey(t)"
               [resource]="store.resourceById(t.resourceId)"
+              [sprint]="store.sprintById(t.sprintId)"
               [projectLabel]="showProjectLabel() ? store.projectById(t.projectId)?.name : undefined"
               (open)="openTicket.emit($event)"
             />

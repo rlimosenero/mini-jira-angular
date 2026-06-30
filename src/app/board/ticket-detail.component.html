@@ -54,6 +54,41 @@
         </div>
       </div>
 
+      <div class="grid grid-cols-2 gap-3 mb-4">
+        <div>
+          <label class="mj-mono text-[11px] font-semibold tracking-wide" style="color: var(--mj-ink-soft)">STORY POINTS</label>
+          <select
+            [ngModel]="ticket()!.storyPoints ?? ''"
+            (ngModelChange)="updateStoryPoints($event)"
+            class="mj-sans w-full text-sm mt-1 p-2 rounded-md outline-none border"
+            style="background: var(--mj-bg); border-color: var(--mj-line)"
+          >
+            <option value="">—</option>
+            @for (p of pointOptions; track p) {
+              <option [value]="p">{{ p }}</option>
+            }
+          </select>
+        </div>
+        <div>
+          <label class="mj-mono text-[11px] font-semibold tracking-wide" style="color: var(--mj-ink-soft)">SPRINT</label>
+          <select
+            [ngModel]="ticket()!.sprintId ?? ''"
+            (ngModelChange)="store.updateTicket(ticket()!.id, { sprintId: $event || null })"
+            class="mj-sans w-full text-sm mt-1 p-2 rounded-md outline-none border"
+            style="background: var(--mj-bg); border-color: var(--mj-line)"
+          >
+            <option value="">No sprint</option>
+            @for (s of sprintsForTicket(); track s.id) {
+              <option [value]="s.id">{{ s.name }}</option>
+            }
+          </select>
+        </div>
+      </div>
+
+      @if (ticket()!.completedAt) {
+        <p class="mj-mono text-[11px] mb-4" style="color: var(--mj-green)">✓ Completed {{ ticket()!.completedAt }}</p>
+      }
+
       <div class="grid grid-cols-2 gap-3 mb-6">
         <div>
           <label class="mj-mono text-[11px] font-semibold tracking-wide" style="color: var(--mj-ink-soft)">PROJECT</label>

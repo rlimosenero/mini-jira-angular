@@ -1,7 +1,7 @@
 import { Injectable } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
 import { Observable } from 'rxjs';
-import { Project, Resource, Ticket, User } from '../shared/models';
+import { Project, Resource, Sprint, Ticket, User } from '../shared/models';
 import { environment } from '../../environments/environment';
 
 @Injectable({ providedIn: 'root' })
@@ -52,5 +52,21 @@ export class TicketApiService {
 
   deleteResource(id: string): Observable<void> {
     return this.http.delete<void>(`${environment.apiBaseUrl}/resources/${id}`);
+  }
+
+  getSprints(): Observable<Sprint[]> {
+    return this.http.get<Sprint[]>(`${environment.apiBaseUrl}/sprints`);
+  }
+
+  addSprint(sprint: Sprint): Observable<Sprint> {
+    return this.http.post<Sprint>(`${environment.apiBaseUrl}/sprints`, sprint);
+  }
+
+  updateSprint(id: string, patch: Partial<Sprint>): Observable<Sprint> {
+    return this.http.put<Sprint>(`${environment.apiBaseUrl}/sprints/${id}`, patch);
+  }
+
+  deleteSprint(id: string): Observable<void> {
+    return this.http.delete<void>(`${environment.apiBaseUrl}/sprints/${id}`);
   }
 }

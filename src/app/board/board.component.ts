@@ -18,6 +18,7 @@ export class BoardComponent {
   tickets = input.required<Ticket[]>();
   showProjectLabel = input<boolean>(false);
   activeProjectId = input.required<string>();
+  activeSprintId = input<string>('all');
 
   openTicket = output<string>();
 
@@ -41,7 +42,9 @@ export class BoardComponent {
   submitQuickAdd(status: Status): void {
     const projectId = this.activeProjectId() === 'all' ? this.store.projects()[0]?.id : this.activeProjectId();
     if (!projectId) return;
-    this.store.addTicket(projectId, status, this.quickAddText);
+    const sprint = this.activeSprintId();
+    const sprintId = sprint === 'all' || sprint === 'none' ? null : sprint;
+    this.store.addTicket(projectId, status, this.quickAddText, sprintId);
     this.quickAddText = '';
     this.quickAddCol.set(null);
   }

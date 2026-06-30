@@ -3,13 +3,27 @@
     <span class="mj-mono text-xs font-semibold" style="color: var(--mj-ink-soft)">{{ ticketKey() }}</span>
     <app-icon name="grip" [size]="14" style="color: var(--mj-line)" />
   </div>
-  @if (projectLabel()) {
-    <span class="mj-mono text-[10px]" style="color: var(--mj-ink-soft)">{{ projectLabel() }}</span>
+  @if (projectLabel() || sprint()) {
+    <div class="flex items-center gap-1.5">
+      @if (projectLabel()) {
+        <span class="mj-mono text-[10px]" style="color: var(--mj-ink-soft)">{{ projectLabel() }}</span>
+      }
+      @if (sprint()) {
+        <span class="mj-mono text-[10px]" style="color: var(--mj-blue)">{{ sprint()!.name }}</span>
+      }
+    </div>
   }
   <div class="mj-perf"></div>
   <p class="mj-sans text-sm font-medium leading-snug mb-2">{{ ticket().title }}</p>
   <div class="flex items-center justify-between">
-    <span class="mj-mono mj-stamp" [style.color]="priorityColor()">{{ priorityLabel() }}</span>
+    <div class="flex items-center gap-1.5">
+      <span class="mj-mono mj-stamp" [style.color]="priorityColor()">{{ priorityLabel() }}</span>
+      @if (ticket().storyPoints != null) {
+        <span class="mj-mono text-[10px] font-bold w-5 h-5 rounded flex items-center justify-center" style="background: var(--mj-bg); color: var(--mj-ink-soft)">
+          {{ ticket().storyPoints }}
+        </span>
+      }
+    </div>
     @if (resource()) {
       <span
         [title]="resource()!.name"

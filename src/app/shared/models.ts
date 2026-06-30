@@ -13,6 +13,14 @@ export interface Resource {
   role: string;
 }
 
+export interface Sprint {
+  id: string;
+  projectId: string;
+  name: string;
+  startDate: string; // ISO date, e.g. '2026-06-16'
+  endDate: string;
+}
+
 export interface User {
   id: string;
   username: string;
@@ -22,12 +30,15 @@ export interface User {
 export interface Ticket {
   id: string;
   projectId: string;
+  sprintId: string | null;
   num: number;
   title: string;
   description: string;
   status: Status;
   priority: Priority;
   resourceId: string | null;
+  storyPoints: number | null;
+  completedAt: string | null; // ISO date; set automatically when status -> 'done'
 }
 
 export const COLORS = {
@@ -56,3 +67,5 @@ export const PRIORITY_META: Record<Priority, { label: string; color: string }> =
   high: { label: 'HIGH', color: COLORS.amber },
   urgent: { label: 'URGENT', color: COLORS.red },
 };
+
+export const POINT_OPTIONS = [1, 2, 3, 5, 8, 13] as const;

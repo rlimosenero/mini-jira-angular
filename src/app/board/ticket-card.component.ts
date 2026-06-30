@@ -1,5 +1,5 @@
 import { Component, input, output } from '@angular/core';
-import { Ticket, Resource, PRIORITY_META } from '../shared/models';
+import { Ticket, Resource, Sprint, PRIORITY_META } from '../shared/models';
 import { colorFor, initials } from '../shared/utils';
 import { IconComponent } from '../shared/icon.component';
 
@@ -19,6 +19,7 @@ import { IconComponent } from '../shared/icon.component';
 export class TicketCardComponent {
   ticket = input.required<Ticket>();
   resource = input<Resource | undefined>(undefined);
+  sprint = input<Sprint | undefined>(undefined);
   projectLabel = input<string | undefined>(undefined);
   ticketKey = input.required<string>();
 

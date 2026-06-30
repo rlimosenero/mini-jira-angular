@@ -1,6 +1,6 @@
 import { Injectable, signal, effect, inject } from '@angular/core';
-import { Project, Resource, Ticket, Status } from '../shared/models';
-import { SEED_PROJECTS, SEED_RESOURCES, SEED_TICKETS } from './seed';
+import { Project, Resource, Sprint, Ticket, Status } from '../shared/models';
+import { SEED_PROJECTS, SEED_RESOURCES, SEED_SPRINTS, SEED_TICKETS } from './seed';
 import { keyFromName } from '../shared/utils';
 import { TicketApiService } from '../core/ticket-api.service';
 
@@ -8,6 +8,7 @@ const LS_KEYS = {
   projects: 'mini-jira-projects',
   resources: 'mini-jira-resources',
   tickets: 'mini-jira-tickets',
+  sprints: 'mini-jira-sprints',
 };
 
 function load<T>(key: string, fallback: T): T {
@@ -27,6 +28,10 @@ function save(key: string, value: unknown) {
   }
 }
 
+function todayIso(): string {
+  return new Date().toISOString().slice(0, 10);
+}
+
 /**
  * Holds all board state as signals.
  *
@@ -43,6 +48,7 @@ export class TicketStoreService {
   readonly projects = signal<Project[]>(load(LS_KEYS.projects, SEED_PROJECTS));
   readonly resources = signal<Resource[]>(load(LS_KEYS.resources, SEED_RESOURCES));
   readonly tickets = signal<Ticket[]>(load(LS_KEYS.tickets, SEED_TICKETS));
+  readonly sprints = signal<Sprint[]>(load(LS_KEYS.sprints, SEED_SPRINTS));
 
   /** Set when the most recent API call failed, so the UI can show a banner. */
   readonly apiError = signal<string | null>(null);
@@ -52,11 +58,12 @@ export class TicketStoreService {
     effect(() => save(LS_KEYS.projects, this.projects()));
     effect(() => save(LS_KEYS.resources, this.resources()));
     effect(() => save(LS_KEYS.tickets, this.tickets()));
+    effect(() => save(LS_KEYS.sprints, this.sprints()));
 
     this.refreshFromApi();
   }
 
-  /** Re-fetch projects, resources, and tickets from the API and replace local state. */
+  /** Re-fetch projects, resources, sprints, and tickets from the API and replace local state. */
   refreshFromApi(): void {
     this.api.getProjects().subscribe({
       next: (data) => this.projects.set(data),
@@ -64,6 +71,10 @@ export class TicketStoreService {
     });
     this.api.getResources().subscribe({
       next: (data) => this.resources.set(data),
+      error: () => this.markApiUnreachable(),
+    });
+    this.api.getSprints().subscribe({
+      next: (data) => this.sprints.set(data),
       error: () => this.markApiUnreachable(),
     });
     this.api.getTickets().subscribe({
@@ -89,6 +100,11 @@ export class TicketStoreService {
     return this.resources().find((r) => r.id === id);
   }
 
+  sprintById(id: string | null | undefined): Sprint | undefined {
+    if (!id) return undefined;
+    return this.sprints().find((s) => s.id === id);
+  }
+
   ticketKey(t: Ticket): string {
     const p = this.projectById(t.projectId);
     return (p ? p.key : '??') + '-' + t.num;
@@ -102,18 +118,21 @@ export class TicketStoreService {
     );
   }
 
-  addTicket(projectId: string, status: Status, title: string): void {
+  addTicket(projectId: string, status: Status, title: string, sprintId: string | null = null): void {
     const trimmed = title.trim();
     if (!trimmed) return;
     const t: Ticket = {
       id: 't' + Date.now(),
       projectId,
+      sprintId,
       num: this.nextNum(projectId),
       title: trimmed,
       description: '',
       status,
       priority: 'medium',
       resourceId: null,
+      storyPoints: null,
+      completedAt: status === 'done' ? todayIso() : null,
     };
     // Optimistic: update the UI immediately, then persist to the API in the background.
     this.tickets.update((prev) => [...prev, t]);
@@ -123,15 +142,30 @@ export class TicketStoreService {
   }
 
   updateTicket(id: string, patch: Partial<Ticket>): void {
-    this.tickets.update((prev) => prev.map((t) => (t.id === id ? { ...t, ...patch } : t)));
+    this.tickets.update((prev) =>
+      prev.map((t) => {
+        if (t.id !== id) return t;
+        const next = { ...t, ...patch };
+        // Auto-stamp completedAt locally too, so velocity looks right even before
+        // the API's response comes back (the backend does this authoritatively).
+        if (patch.status === 'done' && t.status !== 'done') next.completedAt = todayIso();
+        if (patch.status && patch.status !== 'done' && t.status === 'done') next.completedAt = null;
+        return next;
+      })
+    );
     this.api.updateTicket(id, patch).subscribe({
+      next: (saved) => {
+        // Reconcile with the server's authoritative completedAt in case it differs.
+        this.tickets.update((prev) => prev.map((t) => (t.id === id ? { ...t, completedAt: saved.completedAt } : t)));
+      },
       error: () => this.markApiUnreachable(),
     });
   }
 
   reassignProject(id: string, newProjectId: string): void {
     const newNum = this.nextNum(newProjectId);
-    this.updateTicket(id, { projectId: newProjectId, num: newNum });
+    // A ticket's sprint belongs to its old project, so moving projects clears it.
+    this.updateTicket(id, { projectId: newProjectId, num: newNum, sprintId: null });
   }
 
   deleteTicket(id: string): void {
@@ -160,6 +194,7 @@ export class TicketStoreService {
   removeProject(id: string): void {
     this.projects.update((prev) => prev.filter((p) => p.id !== id));
     this.tickets.update((prev) => prev.filter((t) => t.projectId !== id));
+    this.sprints.update((prev) => prev.filter((s) => s.projectId !== id));
     this.api.deleteProject(id).subscribe({
       error: () => this.markApiUnreachable(),
     });
@@ -181,6 +216,43 @@ export class TicketStoreService {
       prev.map((t) => (t.resourceId === id ? { ...t, resourceId: null } : t))
     );
     this.api.deleteResource(id).subscribe({
+      error: () => this.markApiUnreachable(),
+    });
+  }
+
+  addSprint(projectId: string): Sprint | null {
+    if (!projectId) return null;
+    const count = this.sprints().filter((s) => s.projectId === projectId).length;
+    const start = todayIso();
+    const end = new Date(Date.now() + 13 * 24 * 60 * 60 * 1000).toISOString().slice(0, 10);
+    const s: Sprint = { id: 's' + Date.now(), projectId, name: `Sprint ${count + 1}`, startDate: start, endDate: end };
+    this.sprints.update((prev) => [...prev, s]);
+    this.api.addSprint(s).subscribe({
+      error: () => this.markApiUnreachable(),
+    });
+    return s;
+  }
+
+  updateSprint(id: string, patch: Partial<Sprint>): void {
+    let updated: Sprint | undefined;
+    this.sprints.update((prev) =>
+      prev.map((s) => {
+        if (s.id !== id) return s;
+        updated = { ...s, ...patch };
+        return updated;
+      })
+    );
+    if (!updated) return;
+    // PUT expects the full resource, so send the merged sprint rather than just the patch.
+    this.api.updateSprint(id, updated).subscribe({
+      error: () => this.markApiUnreachable(),
+    });
+  }
+
+  removeSprint(id: string): void {
+    this.sprints.update((prev) => prev.filter((s) => s.id !== id));
+    this.tickets.update((prev) => prev.map((t) => (t.sprintId === id ? { ...t, sprintId: null } : t)));
+    this.api.deleteSprint(id).subscribe({
       error: () => this.markApiUnreachable(),
     });
   }

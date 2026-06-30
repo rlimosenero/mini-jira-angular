@@ -28,34 +28,36 @@
             />
           }
 
-          @if (quickAddCol() === col.id) {
-            <div class="rounded-lg p-2 bg-white border" style="border-color: var(--mj-line)">
-              <input
-                autofocus
-                [(ngModel)]="quickAddText"
-                (keydown.enter)="submitQuickAdd(col.id)"
-                (keydown.escape)="cancelQuickAdd()"
-                placeholder="Ticket title, then Enter"
-                class="mj-sans w-full text-sm outline-none mb-2"
-              />
-              <div class="flex gap-2">
-                <button (click)="submitQuickAdd(col.id)" class="mj-sans text-xs px-2 py-1 rounded text-white" style="background: var(--mj-ink)">
-                  Add ticket
-                </button>
-                <button (click)="cancelQuickAdd()" class="mj-sans text-xs px-2 py-1 rounded" style="color: var(--mj-ink-soft)">
-                  Cancel
-                </button>
+          @if (col.id === 'backlog') {
+            @if (quickAddCol() === col.id) {
+              <div class="rounded-lg p-2 bg-white border" style="border-color: var(--mj-line)">
+                <input
+                  autofocus
+                  [(ngModel)]="quickAddText"
+                  (keydown.enter)="submitQuickAdd(col.id)"
+                  (keydown.escape)="cancelQuickAdd()"
+                  placeholder="Ticket title, then Enter"
+                  class="mj-sans w-full text-sm outline-none mb-2"
+                />
+                <div class="flex gap-2">
+                  <button (click)="submitQuickAdd(col.id)" class="mj-sans text-xs px-2 py-1 rounded text-white" style="background: var(--mj-ink)">
+                    Add ticket
+                  </button>
+                  <button (click)="cancelQuickAdd()" class="mj-sans text-xs px-2 py-1 rounded" style="color: var(--mj-ink-soft)">
+                    Cancel
+                  </button>
+                </div>
               </div>
-            </div>
-          } @else {
-            <button
-              (click)="quickAddCol.set(col.id)"
-              class="mj-sans text-xs flex items-center gap-1 px-2 py-2 rounded-lg hover:bg-white/60"
-              style="color: var(--mj-ink-soft)"
-            >
-              <app-icon name="plus" [size]="14" />
-              New ticket
-            </button>
+            } @else {
+              <button
+                (click)="quickAddCol.set(col.id)"
+                class="mj-sans text-xs flex items-center gap-1 px-2 py-2 rounded-lg hover:bg-white/60"
+                style="color: var(--mj-ink-soft)"
+              >
+                <app-icon name="plus" [size]="14" />
+                New ticket
+              </button>
+            }
           }
         </div>
       </div>

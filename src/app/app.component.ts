@@ -77,12 +77,15 @@ export class AppComponent {
     }
   }
 
-  handleLogin(payload: { username: string; password: string }): void {
+  async handleLogin(payload: { username: string; password: string }): Promise<void> {
     this.loginLoading.set(true);
     this.loginError.set(null);
-    this.auth.login(payload.username, payload.password).subscribe((success) => {
-      this.loginLoading.set(false);
-      if (!success) this.loginError.set('Invalid username or password.');
-    });
+
+    const success = await this.auth.login(payload.username, payload.password);
+    this.loginLoading.set(false);
+
+    if (!success) {
+      this.loginError.set('Invalid username or password.');
+    }
   }
 }

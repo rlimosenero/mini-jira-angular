@@ -1,5 +1,4 @@
 import { Injectable, signal, effect, inject } from '@angular/core';
-import { Observable, map, catchError, of } from 'rxjs';
 import { TicketApiService } from './ticket-api.service';
 
 const LS_KEY = 'mini-jira-current-user';
@@ -32,16 +31,16 @@ export class AuthService {
     effect(() => save(this.currentUser()));
   }
 
-  /** Checks credentials against the API. Emits true on success, false on bad credentials or a network error. */
-  login(username: string, password: string): Observable<boolean> {
-    return this.api.login(username, password).pipe(
-      map((users) => {
-        const matched = users.length > 0;
-        if (matched) this.currentUser.set(username);
-        return matched;
-      }),
-      catchError(() => of(false))
-    );
+  /** Checks credentials against the API. Resolves to true on success, false on bad credentials or a network error. */
+  async login(username: string, password: string): Promise<boolean> {
+    try {
+      const users = await this.api.login(username, password);
+      const matched = users.length > 0;
+      if (matched) this.currentUser.set(username);
+      return matched;
+    } catch {
+      return false;
+    }
   }
 
   logout(): void {

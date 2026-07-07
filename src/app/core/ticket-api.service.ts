@@ -1,72 +1,112 @@
 import { Injectable } from '@angular/core';
-import { HttpClient } from '@angular/common/http';
-import { Observable } from 'rxjs';
 import { Project, Resource, Sprint, Ticket, User } from '../shared/models';
 import { environment } from '../../environments/environment';
 
 @Injectable({ providedIn: 'root' })
 export class TicketApiService {
-  constructor(private http: HttpClient) {}
+  private async request<T>(input: string | URL, init: RequestInit = {}): Promise<T> {
+    const response = await fetch(input, {
+      headers: { 'Content-Type': 'application/json' },
+      ...init,
+    });
 
-  login(username: string, password: string): Observable<User[]> {
+    if (!response.ok) {
+      throw new Error(`Request failed with status ${response.status}`);
+    }
+
+    const text = await response.text();
+    return text ? (JSON.parse(text) as T) : (undefined as T);
+  }
+
+  async login(username: string, password: string): Promise<User[]> {
+    const url = new URL(`${environment.apiBaseUrl}/users`);
+    url.searchParams.set('username', username);
+    url.searchParams.set('password', password);
+
     // json-server treats query params as exact-match filters, so this returns
     // a matching user (or an empty array if the credentials don't match).
-    return this.http.get<User[]>(`${environment.apiBaseUrl}/users`, { params: { username, password } });
+    return this.request<User[]>(url.toString());
   }
 
-  getProjects(): Observable<Project[]> {
-    return this.http.get<Project[]>(`${environment.apiBaseUrl}/projects`);
+  getProjects(): Promise<Project[]> {
+    return this.request<Project[]>(`${environment.apiBaseUrl}/projects`);
   }
 
-  getResources(): Observable<Resource[]> {
-    return this.http.get<Resource[]>(`${environment.apiBaseUrl}/resources`);
+  getResources(): Promise<Resource[]> {
+    return this.request<Resource[]>(`${environment.apiBaseUrl}/resources`);
   }
 
-  getTickets(): Observable<Ticket[]> {
-    return this.http.get<Ticket[]>(`${environment.apiBaseUrl}/tickets`);
+  getTickets(): Promise<Ticket[]> {
+    return this.request<Ticket[]>(`${environment.apiBaseUrl}/tickets`);
   }
 
-  addTicket(ticket: Ticket): Observable<Ticket> {
-    return this.http.post<Ticket>(`${environment.apiBaseUrl}/tickets`, ticket);
+  addTicket(ticket: Ticket): Promise<Ticket> {
+    return this.request<Ticket>(`${environment.apiBaseUrl}/tickets`, {
+      method: 'POST',
+      body: JSON.stringify(ticket),
+    });
   }
 
-  updateTicket(id: string, patch: Partial<Ticket>): Observable<Ticket> {
-    return this.http.patch<Ticket>(`${environment.apiBaseUrl}/tickets/${id}`, patch);
+  updateTicket(id: string, patch: Partial<Ticket>): Promise<Ticket> {
+    return this.request<Ticket>(`${environment.apiBaseUrl}/tickets/${id}`, {
+      method: 'PATCH',
+      body: JSON.stringify(patch),
+    });
   }
 
-  deleteTicket(id: string): Observable<void> {
-    return this.http.delete<void>(`${environment.apiBaseUrl}/tickets/${id}`);
+  deleteTicket(id: string): Promise<void> {
+    return this.request<void>(`${environment.apiBaseUrl}/tickets/${id}`, {
+      method: 'DELETE',
+    });
   }
 
-  addProject(project: Project): Observable<Project> {
-    return this.http.post<Project>(`${environment.apiBaseUrl}/projects`, project);
+  addProject(project: Project): Promise<Project> {
+    return this.request<Project>(`${environment.apiBaseUrl}/projects`, {
+      method: 'POST',
+      body: JSON.stringify(project),
+    });
   }
 
-  deleteProject(id: string): Observable<void> {
-    return this.http.delete<void>(`${environment.apiBaseUrl}/projects/${id}`);
+  deleteProject(id: string): Promise<void> {
+    return this.request<void>(`${environment.apiBaseUrl}/projects/${id}`, {
+      method: 'DELETE',
+    });
   }
 
-  addResource(resource: Resource): Observable<Resource> {
-    return this.http.post<Resource>(`${environment.apiBaseUrl}/resources`, resource);
+  addResource(resource: Resource): Promise<Resource> {
+    return this.request<Resource>(`${environment.apiBaseUrl}/resources`, {
+      method: 'POST',
+      body: JSON.stringify(resource),
+    });
   }
 
-  deleteResource(id: string): Observable<void> {
-    return this.http.delete<void>(`${environment.apiBaseUrl}/resources/${id}`);
+  deleteResource(id: string): Promise<void> {
+    return this.request<void>(`${environment.apiBaseUrl}/resources/${id}`, {
+      method: 'DELETE',
+    });
   }
 
-  getSprints(): Observable<Sprint[]> {
-    return this.http.get<Sprint[]>(`${environment.apiBaseUrl}/sprints`);
+  getSprints(): Promise<Sprint[]> {
+    return this.request<Sprint[]>(`${environment.apiBaseUrl}/sprints`);
   }
 
-  addSprint(sprint: Sprint): Observable<Sprint> {
-    return this.http.post<Sprint>(`${environment.apiBaseUrl}/sprints`, sprint);
+  addSprint(sprint: Sprint): Promise<Sprint> {
+    return this.request<Sprint>(`${environment.apiBaseUrl}/sprints`, {
+      method: 'POST',
+      body: JSON.stringify(sprint),
+    });
   }
 
-  updateSprint(id: string, patch: Partial<Sprint>): Observable<Sprint> {
-    return this.http.put<Sprint>(`${environment.apiBaseUrl}/sprints/${id}`, patch);
+  updateSprint(id: string, patch: Partial<Sprint>): Promise<Sprint> {
+    return this.request<Sprint>(`${environment.apiBaseUrl}/sprints/${id}`, {
+      method: 'PUT',
+      body: JSON.stringify(patch),
+    });
   }
 
-  deleteSprint(id: string): Observable<void> {
-    return this.http.delete<void>(`${environment.apiBaseUrl}/sprints/${id}`);
+  deleteSprint(id: string): Promise<void> {
+    return this.request<void>(`${environment.apiBaseUrl}/sprints/${id}`, {
+      method: 'DELETE',
+    });
   }
 }

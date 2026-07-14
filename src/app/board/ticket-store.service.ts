@@ -1,54 +1,67 @@
-import { Injectable, signal, inject } from '@angular/core';
-import { Project, Resource, Sprint, Ticket, Status } from '../shared/models';
+import { DestroyRef, Injectable, inject, signal } from '@angular/core';
+import { Project, Resource, Sprint, Status, Ticket, TicketComment } from '../shared/models';
 import { SEED_PROJECTS, SEED_RESOURCES, SEED_SPRINTS, SEED_TICKETS } from './seed';
 import { keyFromName } from '../shared/utils';
 import { TicketApiService } from '../core/ticket-api.service';
+import { AuthService } from '../core/auth.service';
 
 function todayIso(): string {
   return new Date().toISOString().slice(0, 10);
 }
 
-/**
- * Holds all board state as signals.
- *
- * Data is loaded from the API on startup and kept in sync with it on every
- * mutation. The seed data is only used as a simple fallback until the API responds.
- */
+/** Prefix for optimistic inserts before the server returns the real UUID. */
+const TEMP_PREFIX = '__temp__';
+const REFRESH_INTERVAL_MS = 30000;
+
 @Injectable({ providedIn: 'root' })
 export class TicketStoreService {
   private api = inject(TicketApiService);
-  private refreshTimer: number | null = null;
+  private auth = inject(AuthService);
+  private destroyRef = inject(DestroyRef);
+
+  private refreshTimer: ReturnType<typeof setInterval> | null = null;
   private refreshInFlight = false;
+  private readonly visibilityRefresh = () => {
+    if (!document.hidden) void this.loadBoardData();
+  };
 
-  readonly projects = signal<Project[]>(SEED_PROJECTS);
+  readonly projects  = signal<Project[]>(SEED_PROJECTS);
   readonly resources = signal<Resource[]>(SEED_RESOURCES);
-  readonly tickets = signal<Ticket[]>(SEED_TICKETS);
-  readonly sprints = signal<Sprint[]>(SEED_SPRINTS);
+  readonly tickets   = signal<Ticket[]>(SEED_TICKETS);
+  readonly sprints   = signal<Sprint[]>(SEED_SPRINTS);
 
-  /** Set when the most recent API call failed, so the UI can show a banner. */
+  /** Non-null when the most recent API call failed. Shown as a banner in the UI. */
   readonly apiError = signal<string | null>(null);
+
+  readonly ticketComments = signal<Map<string, TicketComment[]>>(new Map());
 
   constructor() {
     this.refreshFromApi();
     this.startPolling();
+
+    this.destroyRef.onDestroy(() => {
+      if (this.refreshTimer !== null) {
+        clearInterval(this.refreshTimer);
+        this.refreshTimer = null;
+      }
+      document.removeEventListener('visibilitychange', this.visibilityRefresh);
+    });
   }
 
-  /** Re-fetch projects, resources, sprints, and tickets from the API and replace local state. */
   refreshFromApi(): void {
     void this.loadBoardData();
   }
 
   private startPolling(): void {
-    this.refreshTimer = window.setInterval(() => {
-      void this.loadBoardData();
-    }, 5000);
+    this.refreshTimer = setInterval(() => {
+      if (!document.hidden) void this.loadBoardData();
+    }, REFRESH_INTERVAL_MS);
+    document.addEventListener('visibilitychange', this.visibilityRefresh);
   }
 
   private async loadBoardData(): Promise<void> {
     if (this.refreshInFlight) return;
-
     this.refreshInFlight = true;
-
     try {
       const [projects, resources, sprints, tickets] = await Promise.all([
         this.api.getProjects(),
@@ -56,22 +69,76 @@ export class TicketStoreService {
         this.api.getSprints(),
         this.api.getTickets(),
       ]);
-
       this.projects.set(projects);
       this.resources.set(resources);
       this.sprints.set(sprints);
-      this.tickets.set(tickets);
+      // Don't overwrite any in-flight ticket (temp ID) that hasn't been
+      // confirmed by the server yet — avoids a race with slow POSTs.
+      this.tickets.update((prev) => {
+        const inFlight = prev.filter((t) => t.id.startsWith(TEMP_PREFIX));
+        return inFlight.length ? [...tickets, ...inFlight] : tickets;
+      });
       this.apiError.set(null);
     } catch {
-      this.markApiUnreachable();
+      this.apiError.set('Could not reach the API. Working from last known state.');
     } finally {
       this.refreshInFlight = false;
     }
   }
 
-  private markApiUnreachable(): void {
-    this.apiError.set('Could not reach the API. Please try again when the backend is available.');
+  // ─── Comments ───────────────────────────────────────────────────────────────
+
+  loadComments(ticketId: string): Promise<void> {
+    return this.api.getTicketComments(ticketId)
+      .then((entries) => {
+        const sorted = entries.slice().sort((a, b) => b.createdAt.localeCompare(a.createdAt));
+        this.ticketComments.update((m) => new Map(m).set(ticketId, sorted));
+      })
+      .catch(() => {
+        this.apiError.set('Could not load ticket comments.');
+      });
   }
+
+  commentsFor(ticketId: string): TicketComment[] {
+    return this.ticketComments().get(ticketId) ?? [];
+  }
+
+  addComment(ticketId: string, body: string): void {
+    const trimmed = body.trim();
+    if (!trimmed) return;
+
+    const optimistic: TicketComment = {
+      id: TEMP_PREFIX + Date.now(),
+      ticketId,
+      author: this.auth.currentUser() ?? 'Unknown user',
+      body: trimmed,
+      createdAt: new Date().toISOString(),
+    };
+
+    const snapshot = this.ticketComments();
+    this.ticketComments.update((m) => {
+      const next = new Map(m);
+      next.set(ticketId, [optimistic, ...(next.get(ticketId) ?? [])]);
+      return next;
+    });
+
+    const { id: _id, ticketId: _ticketId, ...payload } = optimistic;
+    void this.api.addTicketComment(ticketId, payload)
+      .then((saved) => {
+        this.ticketComments.update((m) => {
+          const next = new Map(m);
+          const entries = next.get(ticketId) ?? [];
+          next.set(ticketId, entries.map((entry) => (entry.id === optimistic.id ? saved : entry)));
+          return next;
+        });
+      })
+      .catch((err: Error) => {
+        this.ticketComments.set(snapshot);
+        this.apiError.set(`Failed to add comment: ${err.message}`);
+      });
+  }
+
+  // ─── Lookups ─────────────────────────────────────────────────────────────────
 
   projectById(id: string | null | undefined): Project | undefined {
     if (!id) return undefined;
@@ -95,17 +162,21 @@ export class TicketStoreService {
 
   nextNum(projectId: string): number {
     return (
-      (this.tickets()
+      this.tickets()
         .filter((t) => t.projectId === projectId)
-        .reduce((m, t) => Math.max(m, t.num), 0) || 0) + 1
+        .reduce((m, t) => Math.max(m, t.num), 0) + 1
     );
   }
+
+  // ─── Ticket mutations ────────────────────────────────────────────────────────
 
   addTicket(projectId: string, status: Status, title: string, sprintId: string | null = null): void {
     const trimmed = title.trim();
     if (!trimmed) return;
-    const t: Ticket = {
-      id: 't' + Date.now(),
+
+    const tempId = TEMP_PREFIX + Date.now();
+    const optimistic: Ticket = {
+      id: tempId,
       projectId,
       sprintId,
       num: this.nextNum(projectId),
@@ -116,91 +187,185 @@ export class TicketStoreService {
       resourceId: null,
       storyPoints: null,
       completedAt: status === 'done' ? todayIso() : null,
+      createdAt: null,
     };
-    // Optimistic: update the UI immediately, then persist to the API in the background.
-    this.tickets.update((prev) => [...prev, t]);
-    void this.api.addTicket(t).catch(() => this.markApiUnreachable());
+
+    const snapshot = this.tickets();
+    this.tickets.update((prev) => [...prev, optimistic]);
+
+    const { id: _drop, ...payload } = optimistic;
+    void this.api.addTicket(payload)
+      .then((saved) => {
+        // Swap temp ticket for the server's real version (UUID + createdAt)
+        this.tickets.update((prev) => prev.map((t) => (t.id === tempId ? saved : t)));
+      })
+      .catch((err: Error) => {
+        this.tickets.set(snapshot);
+        this.apiError.set(`Failed to create ticket: ${err.message}`);
+      });
   }
 
   updateTicket(id: string, patch: Partial<Ticket>): void {
+    const snapshot = this.tickets();
+
     this.tickets.update((prev) =>
       prev.map((t) => {
         if (t.id !== id) return t;
         const next = { ...t, ...patch };
-        // Auto-stamp completedAt locally too, so velocity looks right even before
-        // the API's response comes back (the backend does this authoritatively).
         if (patch.status === 'done' && t.status !== 'done') next.completedAt = todayIso();
         if (patch.status && patch.status !== 'done' && t.status === 'done') next.completedAt = null;
         return next;
       })
     );
-    void this.api.updateTicket(id, patch).then((saved) => {
-      // Reconcile with the server's authoritative completedAt in case it differs.
-      this.tickets.update((prev) => prev.map((t) => (t.id === id ? { ...t, completedAt: saved.completedAt } : t)));
-    }).catch(() => this.markApiUnreachable());
-  }
 
-  reassignProject(id: string, newProjectId: string): void {
-    const newNum = this.nextNum(newProjectId);
-    // A ticket's sprint belongs to its old project, so moving projects clears it.
-    this.updateTicket(id, { projectId: newProjectId, num: newNum, sprintId: null });
+    void this.api.updateTicket(id, patch)
+      .then((saved) => {
+        // Reconcile with the server's authoritative completedAt
+        this.tickets.update((prev) =>
+          prev.map((t) => (t.id === id ? { ...t, completedAt: saved.completedAt } : t))
+        );
+      })
+      .catch((err: Error) => {
+        this.tickets.set(snapshot);
+        this.apiError.set(`Failed to update ticket: ${err.message}`);
+      });
   }
 
   deleteTicket(id: string): void {
+    const snapshot = this.tickets();
     this.tickets.update((prev) => prev.filter((t) => t.id !== id));
-    void this.api.deleteTicket(id).catch(() => this.markApiUnreachable());
+
+    void this.api.deleteTicket(id)
+      .catch((err: Error) => {
+        this.tickets.set(snapshot);
+        this.apiError.set(`Failed to delete ticket: ${err.message}`);
+      });
   }
 
   moveTicket(id: string, status: Status): void {
     this.updateTicket(id, { status });
   }
 
+  reassignProject(id: string, newProjectId: string): void {
+    this.updateTicket(id, { projectId: newProjectId, num: this.nextNum(newProjectId), sprintId: null });
+  }
+
+  // ─── Project mutations ───────────────────────────────────────────────────────
+
   addProject(name: string): Project | null {
     const trimmed = name.trim();
     if (!trimmed) return null;
+
     const key = keyFromName(trimmed, this.projects().map((p) => p.key));
-    const p: Project = { id: 'p' + Date.now(), key, name: trimmed };
-    this.projects.update((prev) => [...prev, p]);
-    void this.api.addProject(p).catch(() => this.markApiUnreachable());
-    return p;
+    const tempId = TEMP_PREFIX + Date.now();
+    const optimistic: Project = { id: tempId, key, name: trimmed };
+
+    const snapshot = this.projects();
+    this.projects.update((prev) => [...prev, optimistic]);
+
+    const { id: _drop, ...payload } = optimistic;
+    void this.api.addProject(payload)
+      .then((saved) => {
+        this.projects.update((prev) => prev.map((p) => (p.id === tempId ? saved : p)));
+      })
+      .catch((err: Error) => {
+        this.projects.set(snapshot);
+        this.apiError.set(`Failed to create project: ${err.message}`);
+      });
+
+    return optimistic;
   }
 
   removeProject(id: string): void {
+    const snapshotProjects = this.projects();
+    const snapshotTickets  = this.tickets();
+    const snapshotSprints  = this.sprints();
+
     this.projects.update((prev) => prev.filter((p) => p.id !== id));
-    this.tickets.update((prev) => prev.filter((t) => t.projectId !== id));
-    this.sprints.update((prev) => prev.filter((s) => s.projectId !== id));
-    void this.api.deleteProject(id).catch(() => this.markApiUnreachable());
+    this.tickets.update((prev)  => prev.filter((t) => t.projectId !== id));
+    this.sprints.update((prev)  => prev.filter((s) => s.projectId !== id));
+
+    void this.api.deleteProject(id)
+      .catch((err: Error) => {
+        this.projects.set(snapshotProjects);
+        this.tickets.set(snapshotTickets);
+        this.sprints.set(snapshotSprints);
+        this.apiError.set(`Failed to delete project: ${err.message}`);
+      });
   }
+
+  // ─── Resource mutations ──────────────────────────────────────────────────────
 
   addResource(name: string, role: string): void {
     const trimmed = name.trim();
     if (!trimmed) return;
-    const r: Resource = { id: 'r' + Date.now(), name: trimmed, role: role.trim() || 'Team member' };
-    this.resources.update((prev) => [...prev, r]);
-    void this.api.addResource(r).catch(() => this.markApiUnreachable());
+
+    const tempId = TEMP_PREFIX + Date.now();
+    const optimistic: Resource = { id: tempId, name: trimmed, role: role.trim() || 'Team member' };
+
+    const snapshot = this.resources();
+    this.resources.update((prev) => [...prev, optimistic]);
+
+    const { id: _drop, ...payload } = optimistic;
+    void this.api.addResource(payload)
+      .then((saved) => {
+        this.resources.update((prev) => prev.map((r) => (r.id === tempId ? saved : r)));
+      })
+      .catch((err: Error) => {
+        this.resources.set(snapshot);
+        this.apiError.set(`Failed to add resource: ${err.message}`);
+      });
   }
 
   removeResource(id: string): void {
+    const snapshotResources = this.resources();
+    const snapshotTickets   = this.tickets();
+
     this.resources.update((prev) => prev.filter((r) => r.id !== id));
     this.tickets.update((prev) =>
       prev.map((t) => (t.resourceId === id ? { ...t, resourceId: null } : t))
     );
-    void this.api.deleteResource(id).catch(() => this.markApiUnreachable());
+
+    void this.api.deleteResource(id)
+      .catch((err: Error) => {
+        this.resources.set(snapshotResources);
+        this.tickets.set(snapshotTickets);
+        this.apiError.set(`Failed to remove resource: ${err.message}`);
+      });
   }
+
+  // ─── Sprint mutations ────────────────────────────────────────────────────────
 
   addSprint(projectId: string): Sprint | null {
     if (!projectId) return null;
+
     const count = this.sprints().filter((s) => s.projectId === projectId).length;
-    const start = todayIso();
-    const end = new Date(Date.now() + 13 * 24 * 60 * 60 * 1000).toISOString().slice(0, 10);
-    const s: Sprint = { id: 's' + Date.now(), projectId, name: `Sprint ${count + 1}`, startDate: start, endDate: end };
-    this.sprints.update((prev) => [...prev, s]);
-    void this.api.addSprint(s).catch(() => this.markApiUnreachable());
-    return s;
+    const startDate = todayIso();
+    const endDate   = new Date(Date.now() + 13 * 24 * 60 * 60 * 1000).toISOString().slice(0, 10);
+
+    const tempId = TEMP_PREFIX + Date.now();
+    const optimistic: Sprint = { id: tempId, projectId, name: `Sprint ${count + 1}`, startDate, endDate };
+
+    const snapshot = this.sprints();
+    this.sprints.update((prev) => [...prev, optimistic]);
+
+    const { id: _drop, ...payload } = optimistic;
+    void this.api.addSprint(payload)
+      .then((saved) => {
+        this.sprints.update((prev) => prev.map((s) => (s.id === tempId ? saved : s)));
+      })
+      .catch((err: Error) => {
+        this.sprints.set(snapshot);
+        this.apiError.set(`Failed to create sprint: ${err.message}`);
+      });
+
+    return optimistic;
   }
 
   updateSprint(id: string, patch: Partial<Sprint>): void {
+    const snapshot = this.sprints();
     let updated: Sprint | undefined;
+
     this.sprints.update((prev) =>
       prev.map((s) => {
         if (s.id !== id) return s;
@@ -208,14 +373,30 @@ export class TicketStoreService {
         return updated;
       })
     );
+
     if (!updated) return;
-    // PUT expects the full resource, so send the merged sprint rather than just the patch.
-    void this.api.updateSprint(id, updated).catch(() => this.markApiUnreachable());
+
+    void this.api.updateSprint(id, updated)
+      .catch((err: Error) => {
+        this.sprints.set(snapshot);
+        this.apiError.set(`Failed to update sprint: ${err.message}`);
+      });
   }
 
   removeSprint(id: string): void {
+    const snapshotSprints = this.sprints();
+    const snapshotTickets = this.tickets();
+
     this.sprints.update((prev) => prev.filter((s) => s.id !== id));
-    this.tickets.update((prev) => prev.map((t) => (t.sprintId === id ? { ...t, sprintId: null } : t)));
-    void this.api.deleteSprint(id).catch(() => this.markApiUnreachable());
+    this.tickets.update((prev) =>
+      prev.map((t) => (t.sprintId === id ? { ...t, sprintId: null } : t))
+    );
+
+    void this.api.deleteSprint(id)
+      .catch((err: Error) => {
+        this.sprints.set(snapshotSprints);
+        this.tickets.set(snapshotTickets);
+        this.apiError.set(`Failed to delete sprint: ${err.message}`);
+      });
   }
 }

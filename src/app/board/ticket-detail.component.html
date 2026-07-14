@@ -2,6 +2,8 @@
   <div class="fixed inset-0 z-20 flex justify-end" (click)="close.emit()">
     <div class="flex-1" style="background: rgba(28,35,51,0.25)"></div>
     <div class="w-full sm:w-96 h-full overflow-y-auto p-5 bg-white border-l" style="border-color: var(--mj-line)" (click)="$event.stopPropagation()">
+
+      <!-- Header -->
       <div class="flex items-center justify-between mb-4">
         <span class="mj-mono text-xs font-semibold" style="color: var(--mj-ink-soft)">{{ store.ticketKey(ticket()!) }}</span>
         <button (click)="close.emit()" aria-label="Close">
@@ -9,22 +11,50 @@
         </button>
       </div>
 
-      <input
-        [ngModel]="ticket()!.title"
-        (ngModelChange)="store.updateTicket(ticket()!.id, { title: $event })"
-        class="mj-sans w-full text-base font-semibold mb-4 outline-none"
-      />
+      <!-- Title -->
+      <div class="mb-4">
+        <input
+          [ngModel]="draftTitle()"
+          (ngModelChange)="draftTitle.set($event)"
+          (blur)="saveTitle()"
+          (keydown.enter)="saveTitle()"
+          class="mj-sans w-full text-base font-semibold outline-none"
+        />
+        @if (titleDirty()) {
+          <button
+            (click)="saveTitle()"
+            class="mj-mono text-[10px] font-semibold mt-1 px-2 py-1 rounded border"
+            style="color: var(--mj-blue); border-color: var(--mj-blue)"
+          >
+            Save title
+          </button>
+        }
+      </div>
 
+      <!-- Description -->
       <label class="mj-mono text-[11px] font-semibold tracking-wide" style="color: var(--mj-ink-soft)">DESCRIPTION</label>
       <textarea
-        [ngModel]="ticket()!.description"
-        (ngModelChange)="store.updateTicket(ticket()!.id, { description: $event })"
+        [ngModel]="draftDescription()"
+        (ngModelChange)="draftDescription.set($event)"
+        (blur)="saveDescription()"
         placeholder="Add a description…"
         rows="4"
-        class="mj-sans w-full text-sm mt-1 mb-4 p-2 rounded-md outline-none resize-none border"
+        class="mj-sans w-full text-sm mt-1 p-2 rounded-md outline-none resize-none border"
         style="background: var(--mj-bg); border-color: var(--mj-line)"
       ></textarea>
+      <div class="h-8 mb-4 flex items-start">
+        @if (descriptionDirty()) {
+          <button
+            (click)="saveDescription()"
+            class="mj-mono text-[10px] font-semibold mt-1 px-2 py-1 rounded border"
+            style="color: var(--mj-blue); border-color: var(--mj-blue)"
+          >
+            Save description
+          </button>
+        }
+      </div>
 
+      <!-- Status + Priority -->
       <div class="grid grid-cols-2 gap-3 mb-4">
         <div>
           <label class="mj-mono text-[11px] font-semibold tracking-wide" style="color: var(--mj-ink-soft)">STATUS</label>
@@ -54,6 +84,7 @@
         </div>
       </div>
 
+      <!-- Story Points + Sprint -->
       <div class="grid grid-cols-2 gap-3 mb-4">
         <div>
           <label class="mj-mono text-[11px] font-semibold tracking-wide" style="color: var(--mj-ink-soft)">STORY POINTS</label>
@@ -85,10 +116,12 @@
         </div>
       </div>
 
+      <!-- Completed stamp -->
       @if (ticket()!.completedAt) {
         <p class="mj-mono text-[11px] mb-4" style="color: var(--mj-green)">✓ Completed {{ ticket()!.completedAt }}</p>
       }
 
+      <!-- Project + Assignee -->
       <div class="grid grid-cols-2 gap-3 mb-6">
         <div>
           <label class="mj-mono text-[11px] font-semibold tracking-wide" style="color: var(--mj-ink-soft)">PROJECT</label>
@@ -119,6 +152,7 @@
         </div>
       </div>
 
+      <!-- Delete -->
       <button
         (click)="deleteAndClose()"
         class="mj-sans flex items-center gap-2 text-sm px-3 py-2 rounded-md border"
@@ -127,6 +161,73 @@
         <app-icon name="trash" [size]="14" />
         Delete ticket
       </button>
+
+      <!-- ─── Update Comments ─────────────────────────────────────────────── -->
+      <div class="mt-6 pt-5 border-t" style="border-color: var(--mj-line)">
+        <p class="mj-mono text-[11px] font-semibold tracking-wide mb-3" style="color: var(--mj-ink-soft)">UPDATES</p>
+
+        <textarea
+          [ngModel]="newComment()"
+          (ngModelChange)="newComment.set($event)"
+          (keydown.control.enter)="submitComment()"
+          placeholder="Write an update…"
+          rows="3"
+          class="mj-sans w-full text-sm p-2 rounded-md outline-none resize-none border"
+          style="background: var(--mj-bg); border-color: var(--mj-line)"
+        ></textarea>
+        <div class="flex justify-end mt-2 mb-4">
+          <button
+            (click)="submitComment()"
+            [disabled]="!newComment().trim()"
+            class="mj-sans flex items-center gap-2 text-sm px-3 py-2 rounded-md border disabled:opacity-40"
+            style="background: var(--mj-ink); color: #fff; border-color: var(--mj-ink)"
+          >
+            <app-icon name="plus" [size]="14" />
+            Add update
+          </button>
+        </div>
+
+        @if (commentsLoading()) {
+          <!-- Skeleton shimmer while loading -->
+          <div class="space-y-3">
+            @for (_ of [1,2,3]; track $index) {
+              <div class="flex gap-3 items-start animate-pulse">
+                <div class="mt-1.5 w-2 h-2 rounded-full flex-shrink-0" style="background: var(--mj-line)"></div>
+                <div class="flex-1 space-y-1">
+                  <div class="h-3 rounded" style="background: var(--mj-line); width: 70%"></div>
+                  <div class="h-2 rounded" style="background: var(--mj-line); width: 40%"></div>
+                </div>
+              </div>
+            }
+          </div>
+
+        } @else if (comments().length === 0) {
+          <p class="mj-sans text-xs" style="color: var(--mj-ink-soft)">No updates yet.</p>
+
+        } @else {
+          <ol class="space-y-4">
+            @for (comment of comments(); track comment.id) {
+              <li class="flex gap-3 items-start">
+                <div
+                  class="mt-1.5 w-2 h-2 rounded-full flex-shrink-0"
+                  style="background: var(--mj-green)"
+                ></div>
+
+                <div class="min-w-0">
+                  <p class="mj-sans text-xs leading-snug whitespace-pre-wrap" style="color: var(--mj-ink)">
+                    {{ comment.body }}
+                  </p>
+                  <p class="mj-mono text-[10px] mt-0.5" style="color: var(--mj-ink-soft)">
+                    {{ comment.author }} · {{ formatDate(comment.createdAt) }}
+                  </p>
+                </div>
+              </li>
+            }
+          </ol>
+        }
+      </div>
+      <!-- ──────────────────────────────────────────────────────────────── -->
+
     </div>
   </div>
 }

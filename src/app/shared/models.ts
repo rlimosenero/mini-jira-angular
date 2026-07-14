@@ -1,4 +1,4 @@
-export type Status = 'backlog' | 'progress' | 'review' | 'done';
+export type Status   = 'backlog' | 'progress' | 'review' | 'done';
 export type Priority = 'low' | 'medium' | 'high' | 'urgent';
 
 export interface Project {
@@ -38,7 +38,16 @@ export interface Ticket {
   priority: Priority;
   resourceId: string | null;
   storyPoints: number | null;
-  completedAt: string | null; // ISO date; set automatically when status -> 'done'
+  completedAt: string | null; // ISO date; set automatically when status → 'done'
+  createdAt?: string | null;  // ISO datetime; populated server-side (optional until all records are migrated)
+}
+
+export interface TicketComment {
+  id: string;
+  ticketId: string;
+  author: string;
+  body: string;
+  createdAt: string; // ISO datetime, e.g. '2026-07-07T14:23:00'
 }
 
 export const COLORS = {
@@ -55,17 +64,17 @@ export const COLORS = {
 } as const;
 
 export const COLUMNS: { id: Status; label: string }[] = [
-  { id: 'backlog', label: 'BACKLOG' },
+  { id: 'backlog',  label: 'BACKLOG'     },
   { id: 'progress', label: 'IN PROGRESS' },
-  { id: 'review', label: 'REVIEW' },
-  { id: 'done', label: 'DONE' },
+  { id: 'review',   label: 'REVIEW'      },
+  { id: 'done',     label: 'DONE'        },
 ];
 
 export const PRIORITY_META: Record<Priority, { label: string; color: string }> = {
-  low: { label: 'LOW', color: COLORS.slate },
-  medium: { label: 'MEDIUM', color: COLORS.blue },
-  high: { label: 'HIGH', color: COLORS.amber },
-  urgent: { label: 'URGENT', color: COLORS.red },
+  low:    { label: 'LOW',    color: COLORS.slate },
+  medium: { label: 'MEDIUM', color: COLORS.blue  },
+  high:   { label: 'HIGH',   color: COLORS.amber },
+  urgent: { label: 'URGENT', color: COLORS.red   },
 };
 
 export const POINT_OPTIONS = [1, 2, 3, 5, 8, 13] as const;

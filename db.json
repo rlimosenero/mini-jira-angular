@@ -127,5 +127,6 @@
       "resourceId": "hCLaVXGjyEk"
     }
   ],
+  "ticketComments": [],
   "$schema": "./node_modules/json-server/schema.json"
 }

@@ -117,11 +117,16 @@ export class TicketDetailComponent {
   }
 
   /**
-   * Format an ISO datetime string into a short, readable date + time.
-   * e.g. '2026-07-07T14:23:00' → 'Jul 7, 2026, 2:23 PM'
-   */
+  * Format an ISO datetime string into a short, readable date + time.
+  * e.g. '2026-07-07T14:23:00' → 'Jul 7, 2026, 2:23 PM'
+  */
   formatDate(iso: string): string {
-    return new Date(iso).toLocaleString('en-US', {
+    // The API returns UTC timestamps without a timezone suffix. JavaScript
+    // interprets those as local time unless we explicitly mark them as UTC.
+    const hasTimeZone = /(?:Z|[+-]\d{2}:\d{2})$/i.test(iso);
+    const utcIso = hasTimeZone ? iso : `${iso}Z`;
+
+    return new Date(utcIso).toLocaleString('en-US', {
       month: 'short',
       day:   'numeric',
       year:  'numeric',

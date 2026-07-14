@@ -60,7 +60,7 @@ export class AppComponent {
 
   projectSprints = computed(() => {
     const projectId = this.activeProjectId();
-    return this.store.sprints().filter((s) => projectId === 'all' || s.projectId === projectId);
+    return this.store.visibleSprints(projectId);
   });
 
   selectProject(id: string): void {

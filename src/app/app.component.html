@@ -103,7 +103,8 @@
       }
     </div>
 
-    <!-- Sprint tabs -->
+    <!-- Sprint tabs are relevant only within a single project. -->
+    @if (activeProjectId() !== 'all') {
     <div class="px-4 sm:px-6 pt-2 flex items-center gap-2 flex-wrap">
       <span class="mj-mono text-[10px] font-semibold tracking-wider" style="color: var(--mj-ink-soft)">SPRINT</span>
       <button
@@ -136,17 +137,16 @@
           {{ s.name }}
         </button>
       }
-      @if (activeProjectId() !== 'all') {
-        <button
-          (click)="store.addSprint(activeProjectId())"
-          class="mj-mono text-xs flex items-center gap-1 px-2.5 py-1 rounded-full"
-          style="color: var(--mj-ink-soft); border: 1px dashed var(--mj-line)"
-        >
-          <app-icon name="plus" [size]="11" />
-          SPRINT
-        </button>
-      }
+      <button
+        (click)="store.addSprint(activeProjectId())"
+        class="mj-mono text-xs flex items-center gap-1 px-2.5 py-1 rounded-full"
+        style="color: var(--mj-ink-soft); border: 1px dashed var(--mj-line)"
+      >
+        <app-icon name="plus" [size]="11" />
+        SPRINT
+      </button>
     </div>
+    }
 
     <div class="px-4 sm:px-6 pt-3 flex items-center gap-2 flex-wrap">
       <app-icon name="users" [size]="15" style="color: var(--mj-ink-soft)" />
@@ -178,6 +178,7 @@
       [showProjectLabel]="activeProjectId() === 'all'"
       [activeProjectId]="activeProjectId()"
       [activeSprintId]="activeSprintId()"
+      [activeResourceId]="activeResourceId()"
       (openTicket)="activeTicketId.set($event)"
     />
 

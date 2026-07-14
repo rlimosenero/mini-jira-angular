@@ -55,11 +55,7 @@ export class VelocityPanelComponent {
     return Math.max(4, (value / this.maxPoints()) * 130);
   }
 
-  projectSprints = computed(() =>
-    this.activeProjectId() === 'all'
-      ? this.store.sprints()
-      : this.store.sprints().filter((s) => s.projectId === this.activeProjectId())
-  );
+  projectSprints = computed(() => this.store.visibleSprints(this.activeProjectId()));
 
   updateSprintName(id: string, name: string): void {
     this.store.updateSprint(id, { name });

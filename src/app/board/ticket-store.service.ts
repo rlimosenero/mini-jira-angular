@@ -1,6 +1,5 @@
 import { DestroyRef, Injectable, inject, signal } from '@angular/core';
 import { Project, Resource, Sprint, Status, Ticket, TicketComment } from '../shared/models';
-import { SEED_PROJECTS, SEED_RESOURCES, SEED_SPRINTS, SEED_TICKETS } from './seed';
 import { keyFromName } from '../shared/utils';
 import { TicketApiService } from '../core/ticket-api.service';
 import { AuthService } from '../core/auth.service';
@@ -25,10 +24,10 @@ export class TicketStoreService {
     if (!document.hidden) void this.loadBoardData();
   };
 
-  readonly projects  = signal<Project[]>(SEED_PROJECTS);
-  readonly resources = signal<Resource[]>(SEED_RESOURCES);
-  readonly tickets   = signal<Ticket[]>(SEED_TICKETS);
-  readonly sprints   = signal<Sprint[]>(SEED_SPRINTS);
+  readonly projects  = signal<Project[]>([]);
+  readonly resources = signal<Resource[]>([]);
+  readonly tickets   = signal<Ticket[]>([]);
+  readonly sprints   = signal<Sprint[]>([]);
 
   /** Non-null when the most recent API call failed. Shown as a banner in the UI. */
   readonly apiError = signal<string | null>(null);
@@ -71,7 +70,7 @@ export class TicketStoreService {
       ]);
       this.projects.set(projects);
       this.resources.set(resources);
-      this.sprints.set(sprints);
+      this.sprints.set(this.visibleSprintsFromSource(sprints));
       // Don't overwrite any in-flight ticket (temp ID) that hasn't been
       // confirmed by the server yet — avoids a race with slow POSTs.
       this.tickets.update((prev) => {
@@ -84,6 +83,19 @@ export class TicketStoreService {
     } finally {
       this.refreshInFlight = false;
     }
+  }
+
+  private visibleSprintsFromSource(sprints: Sprint[]): Sprint[] {
+    return this.dedupSprintsById(sprints);
+  }
+
+  private dedupSprintsById(sprints: Sprint[]): Sprint[] {
+    const seen = new Set<string>();
+    return sprints.filter((sprint) => {
+      if (seen.has(sprint.id)) return false;
+      seen.add(sprint.id);
+      return true;
+    });
   }
 
   // ─── Comments ───────────────────────────────────────────────────────────────
@@ -140,6 +152,10 @@ export class TicketStoreService {
 
   // ─── Lookups ─────────────────────────────────────────────────────────────────
 
+  visibleSprints(projectId: string): Sprint[] {
+    return this.sprints().filter((s) => projectId === 'all' || s.projectId === projectId);
+  }
+
   projectById(id: string | null | undefined): Project | undefined {
     if (!id) return undefined;
     return this.projects().find((p) => p.id === id);
@@ -170,7 +186,13 @@ export class TicketStoreService {
 
   // ─── Ticket mutations ────────────────────────────────────────────────────────
 
-  addTicket(projectId: string, status: Status, title: string, sprintId: string | null = null): void {
+  addTicket(
+    projectId: string,
+    status: Status,
+    title: string,
+    sprintId: string | null = null,
+    resourceId: string | null = null,
+  ): void {
     const trimmed = title.trim();
     if (!trimmed) return;
 
@@ -184,7 +206,7 @@ export class TicketStoreService {
       description: '',
       status,
       priority: 'medium',
-      resourceId: null,
+      resourceId,
       storyPoints: null,
       completedAt: status === 'done' ? todayIso() : null,
       createdAt: null,

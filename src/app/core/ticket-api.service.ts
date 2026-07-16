@@ -1,6 +1,8 @@
 import { Injectable } from '@angular/core';
 import { Project, Resource, Sprint, Ticket, TicketComment, User } from '../shared/models';
 import { environment } from '../../environments/environment';
+import { AuthResponse } from '../shared/models';
+
 
 @Injectable({ providedIn: 'root' })
 export class TicketApiService {
@@ -9,31 +11,88 @@ export class TicketApiService {
    * Core request wrapper. Throws on non-2xx responses so callers can catch uniformly.
    * Handles 204 No Content (Spring Boot DELETE/PATCH with no body) gracefully.
    */
-  private async request<T>(input: string | URL, init: RequestInit = {}): Promise<T> {
-    const response = await fetch(input, {
-      headers: { 'Content-Type': 'application/json' },
-      ...init,
-    });
+private async request<T>(
+  input: string | URL,
+  init: RequestInit = {}
+): Promise<T> {
 
-    if (!response.ok) {
-      const errText = await response.text().catch(() => '');
-      throw new Error(`[${response.status}] ${errText || response.statusText}`);
+  const token =
+    localStorage.getItem('jwt');
+
+  const response = await fetch(
+    input,
+    {
+      headers: {
+        'Content-Type':
+          'application/json',
+
+        ...(token
+          ? {
+              Authorization:
+                `Bearer ${token}`
+            }
+          : {})
+      },
+
+      ...init
     }
+  );
 
-    if (response.status === 204) return undefined as T;
+  if (!response.ok) {
 
-    const text = await response.text();
-    return text ? (JSON.parse(text) as T) : (undefined as T);
+    const text =
+      await response.text();
+
+    throw new Error(text);
   }
+
+  if (response.status === 204) {
+    return undefined as T;
+  }
+
+  const text =
+    await response.text();
+
+  return text
+    ? JSON.parse(text)
+    : (undefined as T);
+}
 
   // ─── Auth ────────────────────────────────────────────────────────────────────
-  // NOTE: JWT wiring is a later release.
-  async login(username: string, password: string): Promise<User[]> {
-    const url = new URL(`${environment.apiBaseUrl}/users`);
-    url.searchParams.set('username', username);
-    url.searchParams.set('password', password);
-    return this.request<User[]>(url.toString());
-  }
+async register(
+  username: string,
+  password: string
+): Promise<AuthResponse> {
+
+  return this.request<AuthResponse>(
+    `${environment.apiBaseUrl}/auth/register`,
+    {
+      method: 'POST',
+      body: JSON.stringify({
+        username,
+        password
+      })
+    }
+  );
+}
+
+async login(
+  username: string,
+  password: string
+): Promise<AuthResponse> {
+
+  return this.request<AuthResponse>(
+    `${environment.apiBaseUrl}/auth/login`,
+    {
+      method: 'POST',
+      body: JSON.stringify({
+        username,
+        password
+      })
+    }
+  );
+}
+
 
   // ─── Projects ────────────────────────────────────────────────────────────────
   getProjects(): Promise<Project[]> {

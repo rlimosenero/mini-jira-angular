@@ -50,6 +50,18 @@ export interface TicketComment {
   createdAt: string; // ISO datetime, e.g. '2026-07-07T14:23:00'
 }
 
+export interface AuthRequest {
+  username: string;
+  password: string;
+}
+
+export interface AuthResponse {
+  token: string;
+  userId: string;
+  username: string;
+  role: 'ADMIN' | 'PROJECT_MANAGER' | 'DEVELOPER' | 'VIEWER';
+}
+
 export const COLORS = {
   bg: '#EDF0F4',
   ink: '#1C2333',

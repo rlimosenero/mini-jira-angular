@@ -1,5 +1,37 @@
 @if (!auth.currentUser()) {
-  <app-login (login)="handleLogin($event)" [serverError]="loginError()" [loading]="loginLoading()" />
+
+  @if (!showRegister()) {
+
+    <app-login
+      (login)="handleLogin($event)"
+      [serverError]="loginError()"
+      [loading]="loginLoading()"
+    />
+
+    <div
+  class="fixed bottom-10 left-1/2 -translate-x-1/2 z-50"
+>
+
+      <button
+        (click)="showRegister.set(true)"
+        class="underline">
+
+        Create Account
+
+      </button>
+
+    </div>
+
+  } @else {
+    <app-register
+      (register)="handleRegister($event)"
+      (cancel)="showRegister.set(false)"
+    />
+
+
+  }
+
+
 } @else {
   <div class="min-h-screen mj-sans" style="background: var(--mj-bg); color: var(--mj-ink)">
     <!-- Header -->
@@ -19,6 +51,12 @@
           style="background: var(--mj-card); border-color: var(--mj-line)"
         />
       </div>
+
+
+
+
+
+    @if (auth.canManageTeam()) {
       <button
         (click)="showVelocityPanel.set(true)"
         class="mj-sans text-sm flex items-center gap-1.5 px-3 py-2 rounded-md border"
@@ -27,21 +65,28 @@
         <app-icon name="trending-up" [size]="15" />
         Velocity
       </button>
-      <button
-        (click)="showTeamPanel.set(true)"
-        class="mj-sans text-sm flex items-center gap-1.5 px-3 py-2 rounded-md border"
-        style="background: var(--mj-card); border-color: var(--mj-line)"
-      >
-        <app-icon name="users" [size]="15" />
-        Team
-      </button>
+
+          <button
+            (click)="showTeamPanel.set(true)"
+            class="mj-sans text-sm flex items-center gap-1.5 px-3 py-2 rounded-md border"
+            style="background: var(--mj-card); border-color: var(--mj-line)"
+          >
+            <app-icon name="users" [size]="15" />
+            Team
+          </button>
+
+    }
+
+
       <button
         (click)="auth.logout()"
         class="mj-sans text-sm px-3 py-2 rounded-md border"
         style="background: var(--mj-card); border-color: var(--mj-line); color: var(--mj-ink-soft)"
-      >
-        Sign out ({{ auth.currentUser() }})
+      > Sign out 
+       ({{ auth.currentUser()?.username }} | {{ auth.currentUser()?.role }})
       </button>
+     
+
     </header>
 
     @if (store.apiError()) {
@@ -92,6 +137,7 @@
           </button>
         </div>
       } @else {
+@if (auth.canManageTeam()) {
         <button
           (click)="showProjectForm.set(true)"
           class="mj-mono text-xs flex items-center gap-1 px-3 py-1.5 rounded-full"
@@ -100,6 +146,7 @@
           <app-icon name="plus" [size]="12" />
           PROJECT
         </button>
+      }
       }
     </div>
 

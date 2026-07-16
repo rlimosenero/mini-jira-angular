@@ -122,7 +122,7 @@ export class TicketStoreService {
     const optimistic: TicketComment = {
       id: TEMP_PREFIX + Date.now(),
       ticketId,
-      author: this.auth.currentUser() ?? 'Unknown user',
+      author: this.auth.currentUser()?.username ?? 'Unknown user',
       body: trimmed,
       createdAt: new Date().toISOString(),
     };

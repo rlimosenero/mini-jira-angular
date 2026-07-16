@@ -8,11 +8,12 @@ import { TeamPanelComponent } from './team/team-panel.component';
 import { VelocityPanelComponent } from './velocity/velocity-panel.component';
 import { LoginComponent } from './login/login.component';
 import { IconComponent } from './shared/icon.component';
+import{RegisterComponent}from'./login/register.component';
 
 @Component({
   selector: 'app-root',
   standalone: true,
-  imports: [FormsModule, BoardComponent, TicketDetailComponent, TeamPanelComponent, VelocityPanelComponent, LoginComponent, IconComponent],
+  imports: [FormsModule, BoardComponent, TicketDetailComponent, TeamPanelComponent, VelocityPanelComponent, LoginComponent, IconComponent, RegisterComponent],
   templateUrl: './app.component.html',
   styles: [
     `
@@ -25,6 +26,8 @@ import { IconComponent } from './shared/icon.component';
 export class AppComponent {
   store = inject(TicketStoreService);
   auth = inject(AuthService);
+
+  showRegister = signal(false);
 
   activeProjectId = signal<string>('all');
   activeSprintId = signal<string>('all');
@@ -76,6 +79,27 @@ export class AppComponent {
       this.showProjectForm.set(false);
     }
   }
+
+  async handleRegister(
+  payload: {
+    username: string;
+    password: string;
+  }
+): Promise<void> {
+
+  const success =
+    await this.auth.register(
+      payload.username,
+      payload.password
+    );
+
+  if (!success) {
+    this.loginError.set(
+      'Registration failed'
+    );
+  }
+
+}
 
   async handleLogin(payload: { username: string; password: string }): Promise<void> {
     this.loginLoading.set(true);

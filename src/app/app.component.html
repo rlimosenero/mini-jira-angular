@@ -1,39 +1,24 @@
 @if (!auth.currentUser()) {
 
   @if (!showRegister()) {
-
     <app-login
       (login)="handleLogin($event)"
       [serverError]="loginError()"
       [loading]="loginLoading()"
     />
-
-    <div
-  class="fixed bottom-10 left-1/2 -translate-x-1/2 z-50"
->
-
-      <button
-        (click)="showRegister.set(true)"
-        class="underline">
-
-        Create Account
-
-      </button>
-
+    <div class="fixed bottom-10 left-1/2 -translate-x-1/2 z-50">
+      <button (click)="showRegister.set(true)" class="underline">Create Account</button>
     </div>
-
   } @else {
     <app-register
       (register)="handleRegister($event)"
       (cancel)="showRegister.set(false)"
     />
-
-
   }
-
 
 } @else {
   <div class="min-h-screen mj-sans" style="background: var(--mj-bg); color: var(--mj-ink)">
+
     <!-- Header -->
     <header class="border-b px-4 sm:px-6 py-4 flex flex-col sm:flex-row sm:items-center gap-3 sm:gap-4" style="border-color: var(--mj-line)">
       <div class="flex items-center gap-2">
@@ -52,41 +37,32 @@
         />
       </div>
 
-
-
-
-
-    @if (auth.canManageTeam()) {
-      <button
-        (click)="showVelocityPanel.set(true)"
-        class="mj-sans text-sm flex items-center gap-1.5 px-3 py-2 rounded-md border"
-        style="background: var(--mj-card); border-color: var(--mj-line)"
-      >
-        <app-icon name="trending-up" [size]="15" />
-        Velocity
-      </button>
-
-          <button
-            (click)="showTeamPanel.set(true)"
-            class="mj-sans text-sm flex items-center gap-1.5 px-3 py-2 rounded-md border"
-            style="background: var(--mj-card); border-color: var(--mj-line)"
-          >
-            <app-icon name="users" [size]="15" />
-            Team
-          </button>
-
-    }
-
+      @if (auth.canManageTeam()) {
+        <button
+          (click)="showVelocityPanel.set(true)"
+          class="mj-sans text-sm flex items-center gap-1.5 px-3 py-2 rounded-md border"
+          style="background: var(--mj-card); border-color: var(--mj-line)"
+        >
+          <app-icon name="trending-up" [size]="15" />
+          Velocity
+        </button>
+        <button
+          (click)="showTeamPanel.set(true)"
+          class="mj-sans text-sm flex items-center gap-1.5 px-3 py-2 rounded-md border"
+          style="background: var(--mj-card); border-color: var(--mj-line)"
+        >
+          <app-icon name="users" [size]="15" />
+          Team
+        </button>
+      }
 
       <button
         (click)="auth.logout()"
         class="mj-sans text-sm px-3 py-2 rounded-md border"
         style="background: var(--mj-card); border-color: var(--mj-line); color: var(--mj-ink-soft)"
-      > Sign out 
-       ({{ auth.currentUser()?.username }} | {{ auth.currentUser()?.role }})
+      >
+        Sign out ({{ auth.currentUser()?.username }} | {{ auth.currentUser()?.role }})
       </button>
-     
-
     </header>
 
     @if (store.apiError()) {
@@ -96,136 +72,147 @@
       </div>
     }
 
-    <!-- Project tabs -->
+    <!-- ── Project tabs ───────────────────────────────────────────────── -->
     <div class="px-4 sm:px-6 pt-3 flex items-center gap-2 flex-wrap">
       <app-icon name="folder" [size]="15" style="color: var(--mj-ink-soft)" />
-      <button
-        (click)="selectProject('all')"
-        class="mj-mono mj-chip text-xs font-semibold px-3 py-1.5 rounded-full border"
-        [style.background]="activeProjectId() === 'all' ? 'var(--mj-ink)' : 'var(--mj-card)'"
-        [style.color]="activeProjectId() === 'all' ? '#fff' : 'var(--mj-ink-soft)'"
-        style="border-color: var(--mj-line)"
-      >
-        ALL PROJECTS
-      </button>
-      @for (p of store.projects(); track p.id) {
+
+      <!-- "ALL PROJECTS" only for admin/PM — developers always see only their projects -->
+      @if (auth.canManageTeam()) {
+        <button
+          (click)="selectProject('all')"
+          class="mj-mono mj-chip text-xs font-semibold px-3 py-1.5 rounded-full border"
+          [style.background]="activeProjectId() === 'all' ? 'var(--mj-ink)' : 'var(--mj-card)'"
+          [style.color]="activeProjectId() === 'all' ? '#fff' : 'var(--mj-ink-soft)'"
+          style="border-color: var(--mj-line)"
+        >ALL PROJECTS</button>
+      }
+
+      @for (p of visibleProjects(); track p.id) {
         <button
           (click)="selectProject(p.id)"
           class="mj-mono mj-chip text-xs font-semibold px-3 py-1.5 rounded-full border"
           [style.background]="activeProjectId() === p.id ? 'var(--mj-ink)' : 'var(--mj-card)'"
           [style.color]="activeProjectId() === p.id ? '#fff' : 'var(--mj-ink-soft)'"
           style="border-color: var(--mj-line)"
-        >
-          {{ p.key }} · {{ p.name }}
-        </button>
+        >{{ p.key }} · {{ p.name }}</button>
       }
 
-      @if (showProjectForm()) {
-        <div class="flex items-center gap-1.5">
-          <input
-            autofocus
-            [(ngModel)]="newProjectName"
-            (keydown.enter)="addProject()"
-            (keydown.escape)="showProjectForm.set(false)"
-            placeholder="Project name"
-            class="mj-sans text-xs px-2 py-1.5 rounded-md outline-none border"
-            style="border-color: var(--mj-line)"
-          />
-          <button (click)="addProject()" class="mj-mono text-xs px-2 py-1.5 rounded-md text-white" style="background: var(--mj-ink)">Add</button>
-          <button (click)="showProjectForm.set(false)" aria-label="Cancel">
-            <app-icon name="x" [size]="14" style="color: var(--mj-ink-soft)" />
+      @if (auth.canManageTeam()) {
+        @if (showProjectForm()) {
+          <div class="flex items-center gap-1.5">
+            <input
+              autofocus
+              [(ngModel)]="newProjectName"
+              (keydown.enter)="addProject()"
+              (keydown.escape)="showProjectForm.set(false)"
+              placeholder="Project name"
+              class="mj-sans text-xs px-2 py-1.5 rounded-md outline-none border"
+              style="border-color: var(--mj-line)"
+            />
+            <button (click)="addProject()" class="mj-mono text-xs px-2 py-1.5 rounded-md text-white" style="background: var(--mj-ink)">Add</button>
+            <button (click)="showProjectForm.set(false)" aria-label="Cancel">
+              <app-icon name="x" [size]="14" style="color: var(--mj-ink-soft)" />
+            </button>
+          </div>
+        } @else {
+          <button
+            (click)="showProjectForm.set(true)"
+            class="mj-mono text-xs flex items-center gap-1 px-3 py-1.5 rounded-full"
+            style="color: var(--mj-ink-soft); border: 1px dashed var(--mj-line)"
+          >
+            <app-icon name="plus" [size]="12" />
+            PROJECT
           </button>
-        </div>
-      } @else {
-@if (auth.canManageTeam()) {
-        <button
-          (click)="showProjectForm.set(true)"
-          class="mj-mono text-xs flex items-center gap-1 px-3 py-1.5 rounded-full"
-          style="color: var(--mj-ink-soft); border: 1px dashed var(--mj-line)"
-        >
-          <app-icon name="plus" [size]="12" />
-          PROJECT
-        </button>
-      }
+        }
       }
     </div>
 
-    <!-- Sprint tabs are relevant only within a single project. -->
+    <!-- ── Sprint tabs ────────────────────────────────────────────────── -->
     @if (activeProjectId() !== 'all') {
-    <div class="px-4 sm:px-6 pt-2 flex items-center gap-2 flex-wrap">
-      <span class="mj-mono text-[10px] font-semibold tracking-wider" style="color: var(--mj-ink-soft)">SPRINT</span>
-      <button
-        (click)="activeSprintId.set('all')"
-        class="mj-mono mj-chip text-xs px-2.5 py-1 rounded-full border"
-        [style.background]="activeSprintId() === 'all' ? 'var(--mj-blue)' : 'var(--mj-card)'"
-        [style.color]="activeSprintId() === 'all' ? '#fff' : 'var(--mj-ink-soft)'"
-        style="border-color: var(--mj-line)"
-      >
-        ALL
-      </button>
-      <button
-        (click)="activeSprintId.set('none')"
-        class="mj-mono mj-chip text-xs px-2.5 py-1 rounded-full border"
-        [style.background]="activeSprintId() === 'none' ? 'var(--mj-blue)' : 'var(--mj-card)'"
-        [style.color]="activeSprintId() === 'none' ? '#fff' : 'var(--mj-ink-soft)'"
-        style="border-color: var(--mj-line)"
-      >
-        NO SPRINT
-      </button>
-      @for (s of projectSprints(); track s.id) {
+      <div class="px-4 sm:px-6 pt-2 flex items-center gap-2 flex-wrap">
+        <span class="mj-mono text-[10px] font-semibold tracking-wider" style="color: var(--mj-ink-soft)">SPRINT</span>
         <button
-          (click)="activeSprintId.set(s.id)"
+          (click)="activeSprintId.set('all')"
           class="mj-mono mj-chip text-xs px-2.5 py-1 rounded-full border"
-          [style.background]="activeSprintId() === s.id ? 'var(--mj-blue)' : 'var(--mj-card)'"
-          [style.color]="activeSprintId() === s.id ? '#fff' : 'var(--mj-ink-soft)'"
+          [style.background]="activeSprintId() === 'all' ? 'var(--mj-blue)' : 'var(--mj-card)'"
+          [style.color]="activeSprintId() === 'all' ? '#fff' : 'var(--mj-ink-soft)'"
           style="border-color: var(--mj-line)"
-          [title]="s.startDate + ' – ' + s.endDate"
-        >
-          {{ s.name }}
-        </button>
-      }
-      <button
-        (click)="store.addSprint(activeProjectId())"
-        class="mj-mono text-xs flex items-center gap-1 px-2.5 py-1 rounded-full"
-        style="color: var(--mj-ink-soft); border: 1px dashed var(--mj-line)"
-      >
-        <app-icon name="plus" [size]="11" />
-        SPRINT
-      </button>
-    </div>
+        >ALL</button>
+        <button
+          (click)="activeSprintId.set('none')"
+          class="mj-mono mj-chip text-xs px-2.5 py-1 rounded-full border"
+          [style.background]="activeSprintId() === 'none' ? 'var(--mj-blue)' : 'var(--mj-card)'"
+          [style.color]="activeSprintId() === 'none' ? '#fff' : 'var(--mj-ink-soft)'"
+          style="border-color: var(--mj-line)"
+        >NO SPRINT</button>
+        @for (s of projectSprints(); track s.id) {
+          <button
+            (click)="activeSprintId.set(s.id)"
+            class="mj-mono mj-chip text-xs px-2.5 py-1 rounded-full border"
+            [style.background]="activeSprintId() === s.id ? 'var(--mj-blue)' : 'var(--mj-card)'"
+            [style.color]="activeSprintId() === s.id ? '#fff' : 'var(--mj-ink-soft)'"
+            style="border-color: var(--mj-line)"
+            [title]="s.startDate + ' – ' + s.endDate"
+          >{{ s.name }}</button>
+        }
+        @if (auth.canManageTeam()) {
+          <button
+            (click)="store.addSprint(activeProjectId())"
+            class="mj-mono text-xs flex items-center gap-1 px-2.5 py-1 rounded-full"
+            style="color: var(--mj-ink-soft); border: 1px dashed var(--mj-line)"
+          >
+            <app-icon name="plus" [size]="11" />
+            SPRINT
+          </button>
+        }
+      </div>
     }
 
+    <!-- ── Resource / team filter bar ────────────────────────────────── -->
     <div class="px-4 sm:px-6 pt-3 flex items-center gap-2 flex-wrap">
       <app-icon name="users" [size]="15" style="color: var(--mj-ink-soft)" />
-      <button
-        (click)="activeResourceId.set(null)"
-        class="mj-mono mj-chip text-xs font-semibold px-3 py-1.5 rounded-full border"
-        [style.background]="activeResourceId() === null ? 'var(--mj-ink)' : 'var(--mj-card)'"
-        [style.color]="activeResourceId() === null ? '#fff' : 'var(--mj-ink-soft)'"
-        style="border-color: var(--mj-line)"
-      >
-        ALL TEAM
-      </button>
-      @for (r of store.resources(); track r.id) {
+
+      @if (auth.canManageTeam()) {
+        <!-- Admin / PM: full chip list; selecting a name also narrows projects -->
         <button
-          (click)="activeResourceId.set(r.id)"
+          (click)="selectResource(null)"
           class="mj-mono mj-chip text-xs font-semibold px-3 py-1.5 rounded-full border"
-          [style.background]="activeResourceId() === r.id ? 'var(--mj-ink)' : 'var(--mj-card)'"
-          [style.color]="activeResourceId() === r.id ? '#fff' : 'var(--mj-ink-soft)'"
+          [style.background]="activeResourceId() === null ? 'var(--mj-ink)' : 'var(--mj-card)'"
+          [style.color]="activeResourceId() === null ? '#fff' : 'var(--mj-ink-soft)'"
           style="border-color: var(--mj-line)"
-        >
-          {{ r.name }}
-        </button>
+        >ALL TEAM</button>
+
+        @for (r of store.resources(); track r.id) {
+          <button
+            (click)="selectResource(r.id)"
+            class="mj-mono mj-chip text-xs font-semibold px-3 py-1.5 rounded-full border"
+            [style.background]="activeResourceId() === r.id ? 'var(--mj-ink)' : 'var(--mj-card)'"
+            [style.color]="activeResourceId() === r.id ? '#fff' : 'var(--mj-ink-soft)'"
+            style="border-color: var(--mj-line)"
+          >{{ r.name }}</button>
+        }
+
+      } @else {
+        <!-- Developer: single read-only chip showing their own name -->
+        @if (developerResource(); as res) {
+          <span
+            class="mj-mono mj-chip text-xs font-semibold px-3 py-1.5 rounded-full border"
+            style="background: var(--mj-ink); color: #fff; border-color: var(--mj-line)"
+          >{{ res.name }}</span>
+        } @else {
+          <span class="mj-sans text-xs" style="color: var(--mj-ink-soft)">
+            (No resource record linked to "{{ auth.currentUser()?.username }}")
+          </span>
+        }
       }
     </div>
-    <!-- End All Projects -->
 
     <app-board
       [tickets]="filteredTickets()"
       [showProjectLabel]="activeProjectId() === 'all'"
       [activeProjectId]="activeProjectId()"
       [activeSprintId]="activeSprintId()"
-      [activeResourceId]="activeResourceId()"
+      [activeResourceId]="effectiveResourceId()"
       (openTicket)="activeTicketId.set($event)"
     />
 

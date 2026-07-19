@@ -1,4 +1,4 @@
 export const environment = {
   production: true,
-  apiBaseUrl: 'https://mini-jira-back.customadsph.online',
+  apiBaseUrl: 'https://z500-sb.customadsph.com',
 } as const;

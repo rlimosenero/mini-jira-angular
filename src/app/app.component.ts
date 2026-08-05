@@ -9,6 +9,7 @@ import { VelocityPanelComponent } from './velocity/velocity-panel.component';
 import { LoginComponent } from './login/login.component';
 import { IconComponent } from './shared/icon.component';
 import { RegisterComponent } from './login/register.component';
+import { environment } from '../environments/environment';
 
 @Component({
   selector: 'app-root',
@@ -126,6 +127,23 @@ export class AppComponent {
       this.showProjectForm.set(false);
     }
   }
+
+  downloadReport(resourceId: string): void {
+  const token = this.auth.getToken(); // however you expose the JWT
+  const url = `${environment.apiBaseUrl}/export/report?resourceId=${resourceId}`;
+
+  fetch(url, {
+    headers: { Authorization: `Bearer ${token}` }
+  })
+    .then(res => res.blob())
+    .then(blob => {
+      const a = document.createElement('a');
+      a.href = URL.createObjectURL(blob);
+      a.download = `report-${resourceId}.xlsx`;
+      a.click();
+      URL.revokeObjectURL(a.href);
+    });
+}
 
   async handleRegister(payload: { username: string; password: string }): Promise<void> {
     const success = await this.auth.register(payload.username, payload.password);

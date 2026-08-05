@@ -156,4 +156,8 @@ export class AuthService {
       'PROJECT_MANAGER'
     ].includes(this.role() ?? '');
   }
+
+  getToken(): string | null {
+  return this.currentUser()?.token ?? localStorage.getItem('jwt');
+}
 }

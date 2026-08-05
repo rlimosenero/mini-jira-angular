@@ -56,6 +56,12 @@
         </button>
       }
 
+      @if (auth.currentUser()?.role === 'ADMIN') {
+  <button (click)="downloadReport('e1n7DJ8ThpI')">
+    Export Report
+  </button>
+}
+
       <button
         (click)="auth.logout()"
         class="mj-sans text-sm px-3 py-2 rounded-md border"

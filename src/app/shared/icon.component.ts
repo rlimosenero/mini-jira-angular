@@ -9,7 +9,9 @@ export type IconName =
   | 'ticket'
   | 'users'
   | 'folder'
-  | 'trending-up';
+  | 'trending-up'
+  | 'download'
+  | 'check';
 
 @Component({
   selector: 'app-icon',

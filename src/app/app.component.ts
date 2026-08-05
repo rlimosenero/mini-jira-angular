@@ -9,12 +9,13 @@ import { VelocityPanelComponent } from './velocity/velocity-panel.component';
 import { LoginComponent } from './login/login.component';
 import { IconComponent } from './shared/icon.component';
 import { RegisterComponent } from './login/register.component';
+import { ExportPanelComponent } from './export/export-panel.component';
 import { environment } from '../environments/environment';
 
 @Component({
   selector: 'app-root',
   standalone: true,
-  imports: [FormsModule, BoardComponent, TicketDetailComponent, TeamPanelComponent, VelocityPanelComponent, LoginComponent, IconComponent, RegisterComponent],
+  imports: [FormsModule, BoardComponent, TicketDetailComponent, TeamPanelComponent, VelocityPanelComponent, LoginComponent, IconComponent, RegisterComponent, ExportPanelComponent],
   templateUrl: './app.component.html',
   styles: [`:host { display: block; }`],
 })
@@ -32,6 +33,7 @@ export class AppComponent {
   activeTicketId    = signal<string | null>(null);
   showTeamPanel     = signal(false);
   showVelocityPanel = signal(false);
+  showExportPanel   = signal(false);
   showProjectForm   = signal(false);
   newProjectName    = '';
 
@@ -127,23 +129,6 @@ export class AppComponent {
       this.showProjectForm.set(false);
     }
   }
-
-  downloadReport(resourceId: string): void {
-  const token = this.auth.getToken(); // however you expose the JWT
-  const url = `${environment.apiBaseUrl}/export/report?resourceId=${resourceId}`;
-
-  fetch(url, {
-    headers: { Authorization: `Bearer ${token}` }
-  })
-    .then(res => res.blob())
-    .then(blob => {
-      const a = document.createElement('a');
-      a.href = URL.createObjectURL(blob);
-      a.download = `report-${resourceId}.xlsx`;
-      a.click();
-      URL.revokeObjectURL(a.href);
-    });
-}
 
   async handleRegister(payload: { username: string; password: string }): Promise<void> {
     const success = await this.auth.register(payload.username, payload.password);

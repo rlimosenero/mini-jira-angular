@@ -56,11 +56,16 @@
         </button>
       }
 
-      @if (auth.currentUser()?.role === 'ADMIN') {
-  <button (click)="downloadReport('e1n7DJ8ThpI')">
-    Export Report
-  </button>
-}
+      @if (auth.isAdmin()) {
+        <button
+          (click)="showExportPanel.set(true)"
+          class="mj-sans text-sm flex items-center gap-1.5 px-3 py-2 rounded-md border"
+          style="background: var(--mj-card); border-color: var(--mj-line)"
+        >
+          <app-icon name="download" [size]="15" />
+          Export
+        </button>
+      }
 
       <button
         (click)="auth.logout()"
@@ -230,6 +235,10 @@
 
     @if (showVelocityPanel()) {
       <app-velocity-panel [activeProjectId]="activeProjectId()" (close)="showVelocityPanel.set(false)" />
+    }
+
+    @if (showExportPanel()) {
+      <app-export-panel (close)="showExportPanel.set(false)" />
     }
   </div>
 }

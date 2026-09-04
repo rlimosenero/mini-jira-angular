@@ -1,0 +1,114 @@
+<div class="fixed inset-0 z-20 flex justify-end" (click)="close.emit()">
+  <div class="flex-1" style="background: rgba(28,35,51,0.25)"></div>
+  <div
+    class="w-full sm:w-[28rem] h-full overflow-y-auto p-5 bg-white border-l"
+    style="border-color: var(--mj-line)"
+    (click)="$event.stopPropagation()"
+  >
+    <div class="flex items-center justify-between mb-1">
+      <h2 class="mj-mono text-sm font-semibold tracking-wide">VELOCITY</h2>
+      <button (click)="close.emit()" aria-label="Close">
+        <app-icon name="x" [size]="18" style="color: var(--mj-ink-soft)" />
+      </button>
+    </div>
+    <p class="mj-sans text-xs mb-5" style="color: var(--mj-ink-soft)">
+      Story points completed per sprint.
+    </p>
+
+    @if (velocityData().length === 0) {
+      <p class="mj-sans text-sm" style="color: var(--mj-ink-soft)">No sprints yet. Add one below.</p>
+    } @else {
+      <div class="flex items-end gap-3 mb-2" style="height: 160px">
+        @for (d of velocityData(); track d.sprintId) {
+          <div class="flex-1 flex flex-col items-center justify-end h-full">
+            <span class="mj-mono text-[11px] font-semibold mb-1" style="color: var(--mj-ink)">{{ d.completed }}</span>
+            <div class="w-full flex items-end justify-center gap-1" style="height: 130px">
+              <div
+                class="rounded-t-md w-full"
+                style="background: var(--mj-blue)"
+                [style.height.px]="barHeight(d.completed)"
+                [title]="d.completed + ' pts completed'"
+              ></div>
+              @if (d.committed > d.completed) {
+                <div
+                  class="rounded-t-md w-2"
+                  style="background: var(--mj-line)"
+                  [style.height.px]="barHeight(d.committed)"
+                  [title]="d.committed + ' pts committed'"
+                ></div>
+              }
+            </div>
+            <span class="mj-mono text-[10px] mt-2 text-center" style="color: var(--mj-ink-soft)">{{ d.name }}</span>
+          </div>
+        }
+      </div>
+
+      <div class="flex items-center gap-4 mb-5 px-1">
+        <div class="flex items-center gap-1.5">
+          <span class="w-2.5 h-2.5 rounded-sm" style="background: var(--mj-blue)"></span>
+          <span class="mj-sans text-xs" style="color: var(--mj-ink-soft)">Completed</span>
+        </div>
+        <div class="flex items-center gap-1.5">
+          <span class="w-2.5 h-2.5 rounded-sm" style="background: var(--mj-line)"></span>
+          <span class="mj-sans text-xs" style="color: var(--mj-ink-soft)">Committed</span>
+        </div>
+      </div>
+
+      <div class="rounded-lg p-3 mb-5" style="background: var(--mj-bg)">
+        <p class="mj-mono text-[11px] font-semibold tracking-wide mb-1" style="color: var(--mj-ink-soft)">AVERAGE VELOCITY</p>
+        <p class="mj-mono text-2xl font-semibold">
+          {{ avgVelocity() }} <span class="text-sm font-normal" style="color: var(--mj-ink-soft)">pts / sprint</span>
+        </p>
+      </div>
+    }
+
+    <div class="mj-perf my-5"></div>
+    <h3 class="mj-mono text-xs font-semibold tracking-wide mb-2" style="color: var(--mj-ink-soft)">SPRINTS</h3>
+    <div class="flex flex-col gap-2">
+      @for (s of projectSprints(); track s.id) {
+        <div class="p-2 rounded-md border" style="border-color: var(--mj-line)">
+          <div class="flex items-center justify-between mb-2">
+            <input
+              [ngModel]="s.name"
+              (ngModelChange)="updateSprintName(s.id, $event)"
+              class="mj-sans text-sm font-medium outline-none flex-1"
+            />
+            <button (click)="store.removeSprint(s.id)" [attr.aria-label]="'Remove ' + s.name">
+              <app-icon name="trash" [size]="13" style="color: var(--mj-ink-soft)" />
+            </button>
+          </div>
+          <div class="flex items-center gap-2">
+            <input
+              type="date"
+              [ngModel]="s.startDate"
+              (ngModelChange)="updateSprintStart(s.id, $event)"
+              class="mj-mono text-xs p-1.5 rounded outline-none flex-1 border"
+              style="background: var(--mj-bg); border-color: var(--mj-line)"
+            />
+            <span class="text-xs" style="color: var(--mj-ink-soft)">–</span>
+            <input
+              type="date"
+              [ngModel]="s.endDate"
+              (ngModelChange)="updateSprintEnd(s.id, $event)"
+              class="mj-mono text-xs p-1.5 rounded outline-none flex-1 border"
+              style="background: var(--mj-bg); border-color: var(--mj-line)"
+            />
+          </div>
+        </div>
+      }
+    </div>
+
+    @if (activeProjectId() !== 'all') {
+      <button
+        (click)="store.addSprint(activeProjectId())"
+        class="mj-sans text-xs flex items-center gap-1 px-3 py-2 mt-3 rounded-lg"
+        style="color: var(--mj-ink-soft); border: 1px dashed var(--mj-line)"
+      >
+        <app-icon name="plus" [size]="13" />
+        New sprint
+      </button>
+    } @else {
+      <p class="mj-sans text-xs mt-3" style="color: var(--mj-ink-soft)">Select a single project to add a new sprint.</p>
+    }
+  </div>
+</div>

@@ -1,0 +1,233 @@
+@if (ticket()) {
+  <div class="fixed inset-0 z-20 flex justify-end" (click)="close.emit()">
+    <div class="flex-1" style="background: rgba(28,35,51,0.25)"></div>
+    <div class="w-full sm:w-96 h-full overflow-y-auto p-5 bg-white border-l" style="border-color: var(--mj-line)" (click)="$event.stopPropagation()">
+
+      <!-- Header -->
+      <div class="flex items-center justify-between mb-4">
+        <span class="mj-mono text-xs font-semibold" style="color: var(--mj-ink-soft)">{{ store.ticketKey(ticket()!) }}</span>
+        <button (click)="close.emit()" aria-label="Close">
+          <app-icon name="x" [size]="18" style="color: var(--mj-ink-soft)" />
+        </button>
+      </div>
+
+      <!-- Title -->
+      <div class="mb-4">
+        <input
+          [ngModel]="draftTitle()"
+          (ngModelChange)="draftTitle.set($event)"
+          (blur)="saveTitle()"
+          (keydown.enter)="saveTitle()"
+          class="mj-sans w-full text-base font-semibold outline-none"
+        />
+        @if (titleDirty()) {
+          <button
+            (click)="saveTitle()"
+            class="mj-mono text-[10px] font-semibold mt-1 px-2 py-1 rounded border"
+            style="color: var(--mj-blue); border-color: var(--mj-blue)"
+          >
+            Save title
+          </button>
+        }
+      </div>
+
+      <!-- Description -->
+      <label class="mj-mono text-[11px] font-semibold tracking-wide" style="color: var(--mj-ink-soft)">DESCRIPTION</label>
+      <textarea
+        [ngModel]="draftDescription()"
+        (ngModelChange)="draftDescription.set($event)"
+        (blur)="saveDescription()"
+        placeholder="Add a description…"
+        rows="4"
+        class="mj-sans w-full text-sm mt-1 p-2 rounded-md outline-none resize-none border"
+        style="background: var(--mj-bg); border-color: var(--mj-line)"
+      ></textarea>
+      <div class="h-8 mb-4 flex items-start">
+        @if (descriptionDirty()) {
+          <button
+            (click)="saveDescription()"
+            class="mj-mono text-[10px] font-semibold mt-1 px-2 py-1 rounded border"
+            style="color: var(--mj-blue); border-color: var(--mj-blue)"
+          >
+            Save description
+          </button>
+        }
+      </div>
+
+      <!-- Status + Priority -->
+      <div class="grid grid-cols-2 gap-3 mb-4">
+        <div>
+          <label class="mj-mono text-[11px] font-semibold tracking-wide" style="color: var(--mj-ink-soft)">STATUS</label>
+          <select
+            [ngModel]="ticket()!.status"
+            (ngModelChange)="store.updateTicket(ticket()!.id, { status: $event })"
+            class="mj-sans w-full text-sm mt-1 p-2 rounded-md outline-none border"
+            style="background: var(--mj-bg); border-color: var(--mj-line)"
+          >
+            @for (c of columns; track c.id) {
+              <option [value]="c.id">{{ c.label }}</option>
+            }
+          </select>
+        </div>
+        <div>
+          <label class="mj-mono text-[11px] font-semibold tracking-wide" style="color: var(--mj-ink-soft)">PRIORITY</label>
+          <select
+            [ngModel]="ticket()!.priority"
+            (ngModelChange)="store.updateTicket(ticket()!.id, { priority: $event })"
+            class="mj-sans w-full text-sm mt-1 p-2 rounded-md outline-none border"
+            style="background: var(--mj-bg); border-color: var(--mj-line)"
+          >
+            @for (p of priorityKeys; track p) {
+              <option [value]="p">{{ priorityMeta[p].label }}</option>
+            }
+          </select>
+        </div>
+      </div>
+
+      <!-- Story Points + Sprint -->
+      <div class="grid grid-cols-2 gap-3 mb-4">
+        <div>
+          <label class="mj-mono text-[11px] font-semibold tracking-wide" style="color: var(--mj-ink-soft)">STORY POINTS</label>
+          <select
+            [ngModel]="ticket()!.storyPoints ?? ''"
+            (ngModelChange)="updateStoryPoints($event)"
+            class="mj-sans w-full text-sm mt-1 p-2 rounded-md outline-none border"
+            style="background: var(--mj-bg); border-color: var(--mj-line)"
+          >
+            <option value="">—</option>
+            @for (p of pointOptions; track p) {
+              <option [value]="p">{{ p }}</option>
+            }
+          </select>
+        </div>
+        <div>
+          <label class="mj-mono text-[11px] font-semibold tracking-wide" style="color: var(--mj-ink-soft)">SPRINT</label>
+          <select
+            [ngModel]="ticket()!.sprintId ?? ''"
+            (ngModelChange)="store.updateTicket(ticket()!.id, { sprintId: $event || null })"
+            class="mj-sans w-full text-sm mt-1 p-2 rounded-md outline-none border"
+            style="background: var(--mj-bg); border-color: var(--mj-line)"
+          >
+            <option value="">No sprint</option>
+            @for (s of sprintsForTicket(); track s.id) {
+              <option [value]="s.id">{{ s.name }}</option>
+            }
+          </select>
+        </div>
+      </div>
+
+      <!-- Completed stamp -->
+      @if (ticket()!.completedAt) {
+        <p class="mj-mono text-[11px] mb-4" style="color: var(--mj-green)">✓ Completed {{ ticket()!.completedAt }}</p>
+      }
+
+      <!-- Project + Assignee -->
+      <div class="grid grid-cols-2 gap-3 mb-6">
+        <div>
+          <label class="mj-mono text-[11px] font-semibold tracking-wide" style="color: var(--mj-ink-soft)">PROJECT</label>
+          <select
+            [ngModel]="ticket()!.projectId"
+            (ngModelChange)="store.reassignProject(ticket()!.id, $event)"
+            class="mj-sans w-full text-sm mt-1 p-2 rounded-md outline-none border"
+            style="background: var(--mj-bg); border-color: var(--mj-line)"
+          >
+            @for (p of store.projects(); track p.id) {
+              <option [value]="p.id">{{ p.key }} · {{ p.name }}</option>
+            }
+          </select>
+        </div>
+        <div>
+          <label class="mj-mono text-[11px] font-semibold tracking-wide" style="color: var(--mj-ink-soft)">ASSIGNEE</label>
+          <select
+            [ngModel]="ticket()!.resourceId ?? ''"
+            (ngModelChange)="store.updateTicket(ticket()!.id, { resourceId: $event || null })"
+            class="mj-sans w-full text-sm mt-1 p-2 rounded-md outline-none border"
+            style="background: var(--mj-bg); border-color: var(--mj-line)"
+          >
+            <option value="">Unassigned</option>
+            @for (r of store.resources(); track r.id) {
+              <option [value]="r.id">{{ r.name }}</option>
+            }
+          </select>
+        </div>
+      </div>
+
+      <!-- Delete -->
+      <button
+        (click)="deleteAndClose()"
+        class="mj-sans flex items-center gap-2 text-sm px-3 py-2 rounded-md border"
+        style="color: var(--mj-red); border-color: var(--mj-red)"
+      >
+        <app-icon name="trash" [size]="14" />
+        Delete ticket
+      </button>
+
+      <!-- ─── Update Comments ─────────────────────────────────────────────── -->
+      <div class="mt-6 pt-5 border-t" style="border-color: var(--mj-line)">
+        <p class="mj-mono text-[11px] font-semibold tracking-wide mb-3" style="color: var(--mj-ink-soft)">UPDATES</p>
+
+        <textarea
+          [ngModel]="newComment()"
+          (ngModelChange)="newComment.set($event)"
+          (keydown.control.enter)="submitComment()"
+          placeholder="Write an update…"
+          rows="3"
+          class="mj-sans w-full text-sm p-2 rounded-md outline-none resize-none border"
+          style="background: var(--mj-bg); border-color: var(--mj-line)"
+        ></textarea>
+        <div class="flex justify-end mt-2 mb-4">
+          <button
+            (click)="submitComment()"
+            [disabled]="!newComment().trim()"
+            class="mj-sans flex items-center gap-2 text-sm px-3 py-2 rounded-md border disabled:opacity-40"
+            style="background: var(--mj-ink); color: #fff; border-color: var(--mj-ink)"
+          >
+            <app-icon name="plus" [size]="14" />
+            Add update
+          </button>
+        </div>
+
+        @if (commentsLoading()) {
+          <!-- Skeleton shimmer while loading -->
+          <div class="space-y-3">
+            @for (_ of [1,2,3]; track $index) {
+              <div class="flex gap-3 items-start animate-pulse">
+                <div class="mt-1.5 w-2 h-2 rounded-full flex-shrink-0" style="background: var(--mj-line)"></div>
+                <div class="flex-1 space-y-1">
+                  <div class="h-3 rounded" style="background: var(--mj-line); width: 70%"></div>
+                  <div class="h-2 rounded" style="background: var(--mj-line); width: 40%"></div>
+                </div>
+              </div>
+            }
+          </div>
+
+        } @else if (comments().length === 0) {
+          <p class="mj-sans text-xs" style="color: var(--mj-ink-soft)">No updates yet.</p>
+
+        } @else {
+          <ol class="space-y-4">
+            @for (comment of comments(); track comment.id) {
+              <li class="flex gap-3 items-start">
+                <div
+                  class="mt-1.5 w-2 h-2 rounded-full flex-shrink-0"
+                  style="background: var(--mj-green)"
+                ></div>
+
+                <div class="min-w-0">
+                  <p class="mj-sans text-xs leading-snug whitespace-pre-wrap" style="color: var(--mj-ink)">
+                    {{ comment.body }}
+                  </p>
+                  <p class="mj-mono text-[10px] mt-0.5" style="color: var(--mj-ink-soft)">
+                    {{ comment.author }} · {{ formatDate(comment.createdAt) }}
+                  </p>
+                </div>
+              </li>
+            }
+          </ol>
+        }
+      </div>
+      <!-- ──────────────────────────────────────────────────────────────── -->
+
+    </div>
+  </div>
+}

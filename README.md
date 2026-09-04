@@ -35,7 +35,6 @@ Output goes to `dist/mini-jira-angular/browser` — deploy that folder to any st
 src/app/
   models.ts                 Shared types and constants (Status, Priority, columns, colors)
   utils.ts                  Avatar color/initials/key-generation helpers
-  seed.ts                   Example projects/resources/tickets for first run
   ticket-store.service.ts   Signals-based state + localStorage persistence
   icon.component.ts         Small inline-SVG icon component
   ticket-card.component.ts  Ticket-stub styled card
@@ -47,7 +46,7 @@ src/app/
 
 ## Notes
 
-- Data (projects, team members, tickets) is saved to your browser's local storage, so it persists between visits on the same browser/device.
+- Data is loaded from the configured backend API.
 - Click "+ PROJECT" to add a new project — it gets an auto-generated key (e.g. `API`).
 - Click "Team" to add/remove people and see each person's open-ticket count.
 - Click any ticket to edit it, reassign its project, change its assignee, or delete it.

@@ -1,6 +1,6 @@
 export const environment = {
   production: false,
-  apiBaseUrl: 'https://z500-sb.customadsph.com',
+  apiBaseUrl: 'http://10.233.132.52:8080',
 } as const;
 
 

@@ -2,8 +2,8 @@ import { Component, inject, output, signal, computed } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { TicketStoreService } from '../board/ticket-store.service';
 import { AuthService } from '../core/auth.service';
+import { AppConfigService } from '../core/app-config.service';
 import { IconComponent } from '../shared/icon.component';
-import { environment } from '../../environments/environment';
 
 @Component({
   selector: 'app-export-panel',
@@ -14,6 +14,7 @@ import { environment } from '../../environments/environment';
 export class ExportPanelComponent {
   store = inject(TicketStoreService);
   auth  = inject(AuthService);
+  appConfig = inject(AppConfigService);
   close = output<void>();
 
   // ── Form state ────────────────────────────────────────────────────────────
@@ -52,7 +53,7 @@ export class ExportPanelComponent {
       if (this.fromDate())          params.set('from', this.fromDate());
       if (this.toDate())            params.set('to',   this.toDate());
 
-      const url   = `${environment.apiBaseUrl}/export/report?${params}`;
+      const url   = `${this.appConfig.apiBaseUrl}/export/report?${params}`;
       const token = this.auth.getToken();
 
       const res = await fetch(url, {

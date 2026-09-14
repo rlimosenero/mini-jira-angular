@@ -201,6 +201,7 @@ export class TicketStoreService {
       id: tempId,
       projectId,
       sprintId,
+      parentTicketId: null,
       num: this.nextNum(projectId),
       title: trimmed,
       description: '',

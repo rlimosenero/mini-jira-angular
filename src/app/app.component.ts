@@ -10,7 +10,6 @@ import { LoginComponent } from './login/login.component';
 import { IconComponent } from './shared/icon.component';
 import { RegisterComponent } from './login/register.component';
 import { ExportPanelComponent } from './export/export-panel.component';
-import { environment } from '../environments/environment';
 
 @Component({
   selector: 'app-root',

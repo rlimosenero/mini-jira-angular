@@ -40,6 +40,30 @@ export class TicketDetailComponent {
     return t ? this.store.sprints().filter((s) => s.projectId === t.projectId) : [];
   });
 
+  parentTicketOptions = computed(() => {
+    const t = this.ticket();
+    if (!t) return [];
+
+    return this.store.tickets()
+      .filter((candidate) => candidate.projectId === t.projectId && candidate.id !== t.id)
+      .sort((a, b) => a.num - b.num);
+  });
+
+  parentTicket = computed(() => {
+    const t = this.ticket();
+    if (!t || !t.parentTicketId) return null;
+    return this.store.tickets().find((candidate) => candidate.id === t.parentTicketId) ?? null;
+  });
+
+  childTickets = computed(() => {
+    const t = this.ticket();
+    if (!t) return [];
+
+    return this.store.tickets()
+      .filter((candidate) => candidate.parentTicketId === t.id)
+      .sort((a, b) => a.num - b.num);
+  });
+
   comments = computed<TicketComment[]>(() => {
     const id = this.ticketId();
     return id ? this.store.commentsFor(id) : [];

@@ -122,7 +122,7 @@
       }
 
       <!-- Project + Assignee -->
-      <div class="grid grid-cols-2 gap-3 mb-6">
+      <div class="grid grid-cols-2 gap-3 mb-4">
         <div>
           <label class="mj-mono text-[11px] font-semibold tracking-wide" style="color: var(--mj-ink-soft)">PROJECT</label>
           <select
@@ -149,6 +149,48 @@
               <option [value]="r.id">{{ r.name }}</option>
             }
           </select>
+        </div>
+      </div>
+
+      <!-- Parent + children -->
+      <div class="mb-6 space-y-4">
+        <div>
+          <label class="mj-mono text-[11px] font-semibold tracking-wide" style="color: var(--mj-ink-soft)">PARENT TICKET</label>
+          <select
+            [ngModel]="ticket()!.parentTicketId ?? ''"
+            (ngModelChange)="store.updateTicket(ticket()!.id, { parentTicketId: $event || null })"
+            class="mj-sans w-full text-sm mt-1 p-2 rounded-md outline-none border"
+            style="background: var(--mj-bg); border-color: var(--mj-line)"
+          >
+            <option value="">No parent</option>
+            @for (candidate of parentTicketOptions(); track candidate.id) {
+              <option [value]="candidate.id">{{ store.ticketKey(candidate) }} · {{ candidate.title }}</option>
+            }
+          </select>
+        </div>
+
+        @if (parentTicket(); as parent) {
+          <div class="rounded-md border p-2" style="background: var(--mj-bg); border-color: var(--mj-line)">
+            <p class="mj-mono text-[10px] font-semibold" style="color: var(--mj-ink-soft)">PARENT</p>
+            <p class="mj-sans text-sm font-medium mt-1">{{ store.ticketKey(parent) }} · {{ parent.title }}</p>
+          </div>
+        }
+
+        <div>
+          <p class="mj-mono text-[11px] font-semibold tracking-wide" style="color: var(--mj-ink-soft)">CHILD TICKETS</p>
+          @if (childTickets().length === 0) {
+            <p class="mj-sans text-xs mt-1" style="color: var(--mj-ink-soft)">No linked children.</p>
+          } @else {
+            <ul class="mt-2 space-y-2">
+              @for (child of childTickets(); track child.id) {
+                <li class="rounded-md border px-2 py-1.5" style="border-color: var(--mj-line)">
+                  <span class="mj-sans text-sm" style="color: var(--mj-ink)">
+                    {{ store.ticketKey(child) }} · {{ child.title }}
+                  </span>
+                </li>
+              }
+            </ul>
+          }
         </div>
       </div>
 

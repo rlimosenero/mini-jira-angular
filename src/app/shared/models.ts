@@ -31,6 +31,7 @@ export interface Ticket {
   id: string;
   projectId: string;
   sprintId: string | null;
+  parentTicketId: string | null;
   num: number;
   title: string;
   description: string;

@@ -26,6 +26,7 @@ export class TicketDetailComponent {
   draftDescription = signal('');
   newComment = signal('');
   commentsLoading = signal(false);
+  linkedMembersOpen = signal(false);
 
   ticket = computed(() => {
     const id = this.ticketId();
@@ -63,6 +64,24 @@ export class TicketDetailComponent {
       .filter((candidate) => candidate.parentTicketId === t.id)
       .sort((a, b) => a.num - b.num);
   });
+
+  linkedMembers = computed(() => {
+    const t = this.ticket();
+    if (!t) return [];
+    return this.store.membersForTicket(t.id);
+  });
+
+  isLinkedMember(resourceId: string): boolean {
+    const t = this.ticket();
+    if (!t) return false;
+    return this.store.ticketMembersForTicket(t.id).some((member) => member.resourceId === resourceId);
+  }
+
+  toggleMember(resourceId: string): void {
+    const t = this.ticket();
+    if (!t) return;
+    this.store.toggleTicketMember(t.id, resourceId);
+  }
 
   comments = computed<TicketComment[]>(() => {
     const id = this.ticketId();

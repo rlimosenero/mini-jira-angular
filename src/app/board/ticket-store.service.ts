@@ -1,5 +1,5 @@
 import { DestroyRef, Injectable, inject, signal } from '@angular/core';
-import { Project, Resource, Sprint, Status, Ticket, TicketComment } from '../shared/models';
+import { Project, ProjectMember, Resource, Sprint, Status, Ticket, TicketComment, TicketMember } from '../shared/models';
 import { keyFromName } from '../shared/utils';
 import { TicketApiService } from '../core/ticket-api.service';
 import { AuthService } from '../core/auth.service';
@@ -24,10 +24,12 @@ export class TicketStoreService {
     if (!document.hidden) void this.loadBoardData();
   };
 
-  readonly projects  = signal<Project[]>([]);
-  readonly resources = signal<Resource[]>([]);
-  readonly tickets   = signal<Ticket[]>([]);
-  readonly sprints   = signal<Sprint[]>([]);
+  readonly projects     = signal<Project[]>([]);
+  readonly resources    = signal<Resource[]>([]);
+  readonly tickets      = signal<Ticket[]>([]);
+  readonly sprints      = signal<Sprint[]>([]);
+  readonly ticketMembers = signal<TicketMember[]>([]);
+  readonly projectMembers = signal<ProjectMember[]>([]);
 
   /** Non-null when the most recent API call failed. Shown as a banner in the UI. */
   readonly apiError = signal<string | null>(null);
@@ -77,6 +79,7 @@ export class TicketStoreService {
         const inFlight = prev.filter((t) => t.id.startsWith(TEMP_PREFIX));
         return inFlight.length ? [...tickets, ...inFlight] : tickets;
       });
+      this.hydrateMembershipDefaults();
       this.apiError.set(null);
     } catch {
       this.apiError.set('Could not reach the API. Working from last known state.');
@@ -96,6 +99,79 @@ export class TicketStoreService {
       seen.add(sprint.id);
       return true;
     });
+  }
+
+  /** Frontend-only membership defaults so the new UI has working data before a backend API is added. */
+  private hydrateMembershipDefaults(): void {
+    if (this.ticketMembers().length > 0 || this.projectMembers().length > 0) return;
+
+    const firstProject = this.projects()[0];
+    const firstResource = this.resources()[0];
+    const firstTicket = this.tickets()[0];
+
+    const nextTicketMembers: TicketMember[] = [];
+    const nextProjectMembers: ProjectMember[] = [];
+
+    if (firstResource && firstTicket) {
+      nextTicketMembers.push({
+        id: `tm-${firstTicket.id}-${firstResource.id}`,
+        ticketId: firstTicket.id,
+        resourceId: firstResource.id,
+        role: 'member',
+      });
+    }
+
+    if (firstProject && firstResource) {
+      nextProjectMembers.push({
+        id: `pm-${firstProject.id}-${firstResource.id}`,
+        projectId: firstProject.id,
+        resourceId: firstResource.id,
+      });
+    }
+
+    this.ticketMembers.set(nextTicketMembers);
+    this.projectMembers.set(nextProjectMembers);
+  }
+
+  ticketMembersForTicket(ticketId: string): TicketMember[] {
+    return this.ticketMembers().filter((member) => member.ticketId === ticketId);
+  }
+
+  membersForTicket(ticketId: string): Resource[] {
+    const ids = new Set(this.ticketMembersForTicket(ticketId).map((member) => member.resourceId));
+    return this.resources().filter((resource) => ids.has(resource.id));
+  }
+
+  projectIdsForResource(resourceId: string): string[] {
+    return this.projectMembers()
+      .filter((member) => member.resourceId === resourceId)
+      .map((member) => member.projectId);
+  }
+
+  ticketIdsForResource(resourceId: string): string[] {
+    return this.ticketMembers()
+      .filter((member) => member.resourceId === resourceId)
+      .map((member) => member.ticketId);
+  }
+
+  toggleTicketMember(ticketId: string, resourceId: string): void {
+    const current = this.ticketMembers();
+    const existing = current.find((member) => member.ticketId === ticketId && member.resourceId === resourceId);
+
+    if (existing) {
+      this.ticketMembers.set(current.filter((member) => !(member.ticketId === ticketId && member.resourceId === resourceId)));
+      return;
+    }
+
+    this.ticketMembers.set([
+      ...current,
+      {
+        id: `tm-${ticketId}-${resourceId}-${Date.now()}`,
+        ticketId,
+        resourceId,
+        role: 'member',
+      },
+    ]);
   }
 
   // ─── Comments ───────────────────────────────────────────────────────────────

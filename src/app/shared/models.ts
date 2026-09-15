@@ -13,6 +13,19 @@ export interface Resource {
   role: string;
 }
 
+export interface TicketMember {
+  id: string;
+  ticketId: string;
+  resourceId: string;
+  role?: 'owner' | 'member' | 'reviewer';
+}
+
+export interface ProjectMember {
+  id: string;
+  projectId: string;
+  resourceId: string;
+}
+
 export interface Sprint {
   id: string;
   projectId: string;

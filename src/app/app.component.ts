@@ -91,13 +91,26 @@ export class AppComponent {
       if (projectId !== 'all' && t.projectId !== projectId) return false;
       if (sprintId === 'none' && t.sprintId)                 return false;
       if (sprintId !== 'all' && sprintId !== 'none' && t.sprintId !== sprintId) return false;
-      if (resourceId && t.resourceId !== resourceId)          return false;
+
+      if (resourceId) {
+        const projectMemberships = new Set(this.store.projectIdsForResource(resourceId));
+        const ticketMemberships = new Set(this.store.ticketIdsForResource(resourceId));
+        const isRelated =
+          projectMemberships.has(t.projectId) ||
+          ticketMemberships.has(t.id) ||
+          t.resourceId === resourceId;
+
+        if (!isRelated) return false;
+      }
+
       if (!q) return true;
       const res = this.store.resourceById(t.resourceId);
+      const ticketMembers = this.store.membersForTicket(t.id).map((member) => member.name).join(' ');
       return (
         t.title.toLowerCase().includes(q) ||
         this.store.ticketKey(t).toLowerCase().includes(q) ||
-        (res?.name ?? '').toLowerCase().includes(q)
+        (res?.name ?? '').toLowerCase().includes(q) ||
+        ticketMembers.toLowerCase().includes(q)
       );
     });
   });
